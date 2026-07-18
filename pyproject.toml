@@ -1,0 +1,14 @@
+[project]
+name = "portfolio-anonymizer"
+version = "0.1.0"
+description = "Detect and anonymize sensitive entities (PII) in text, and benchmark pre-trained NER models."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.4.2",
+    "en-core-web-sm",
+    "spacy>=3.8.14",
+]
+
+[tool.uv.sources]
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
