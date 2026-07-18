@@ -18,13 +18,21 @@ PHONE_NUMBER, URL, IBAN, SSN
 
 ## Status
 
-Scaffold. Implementation in progress.
+In progress. Model 1 (spaCy) detection, label mapping, and anonymization are
+working; the second model and the benchmark scorer are next.
 
 ## Models
 
-No model weights are shipped with this repo. To run it, supply your own
-pre-trained NER model (for example a spaCy or Hugging Face model), downloaded
-and run locally.
+This project uses public, pre-trained NER models. No model weights are committed
+to the repo. Each model is declared as a dependency and downloaded from its
+public source when you run `uv sync`, so nothing needs to be supplied by hand.
+
+Currently used:
+
+- spaCy `en_core_web_sm` (pinned in the lock file, installed automatically)
+
+A second pre-trained model will be added so the two can be benchmarked against
+each other. This list is updated as models are added.
 
 ## Dataset format
 

@@ -42,9 +42,9 @@ def main() -> None:
         entities = [(ent.text, ent.label_) for ent in doc.ents]
 
         print(f"--- Row {i} ---")
-        print(f"TEXT : {text}")
-        print(f"GOLD : {row['label']}")
-        print(f"SPACY: {entities}")
+        print(f"TEXT    : {text}")
+        print(f"EXPECTED: {row['label']}")
+        print(f"SPACY   : {entities}")
         print()
 
 
