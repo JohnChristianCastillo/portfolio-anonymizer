@@ -1,0 +1,9 @@
+# Normalize line endings: git stores text as LF, checks out native on each OS.
+* text=auto
+
+# Shell scripts must always be LF, or they break on Linux/macOS (bad interpreter).
+*.sh text eol=lf
+
+# Windows scripts are always CRLF.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
