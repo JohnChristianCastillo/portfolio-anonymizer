@@ -47,14 +47,22 @@ def anonymize(doc: Doc, text: str, label_map: dict[str, str]) -> str:
     replacement does not shift the offsets of spans still to be replaced.
 
     (= manipulating the text in place changes indexes, to be resistant to this
-    manipulate from end to front)
+    manipulate back end to front)
     """
-    result = text
-    for ent in sorted(doc.ents, key=lambda e: e.start_char, reverse=True):
+    # Collect (start, end, label) only for entities whose label we target.
+    spans = []
+    for ent in doc.ents:
         mapped = label_map.get(ent.label_)
-        if mapped is None:
-            continue  # label we do not target - leave the text as-is
-        result = result[: ent.start_char] + f"<{mapped}>" + result[ent.end_char :]
+        if mapped is not None:
+            spans.append((ent.start_char, ent.end_char, mapped))
+
+    # Sorting the tuples in reverse orders them by start position, highest first
+    # (a tuple sorts by its first element), giving the right-to-left order.
+    spans.sort(reverse=True)
+
+    result = text
+    for start, end, label in spans:
+        result = result[:start] + f"<{label}>" + result[end:]
     return result
 
 

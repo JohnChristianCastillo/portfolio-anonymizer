@@ -23,6 +23,9 @@ data/
 *.csv
 *.tsv
 
+# Saved run outputs (may contain the provided text; kept local)
+output/
+
 # Tooling
 .pytest_cache/
 .mypy_cache/
