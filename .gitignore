@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Models (never committed; downloaded/run locally)
+.cache/
+*.model
+*.bin
+*.safetensors
+models/
+
+# Datasets (kept local; do not commit provided or benchmark data)
+data/
+*.csv
+*.tsv
+
+# Tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
