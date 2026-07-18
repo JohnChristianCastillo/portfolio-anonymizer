@@ -37,3 +37,6 @@ Thumbs.db
 
 # Secrets
 .env
+
+# Local-only planning and dev notes (never committed)
+_local/
