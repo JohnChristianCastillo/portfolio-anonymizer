@@ -28,10 +28,14 @@ LABEL_MAP = {
 def load(model_name: str = MODEL_NAME):
     """Load the HuggingFace NER pipeline.
 
-    aggregation_strategy='simple' groups sub-word tokens into whole entities and
-    gives each one a character start/end offset.
+    A transformer splits words into sub-word tokens, so the aggregation strategy
+    decides how those are recombined into entities. 'average' is used because it
+    aligns entities to whole words and averages the sub-word scores. The 'simple'
+    strategy can return a span covering only part of a word, which then replaces
+    mid-word and corrupts the text ("Email" becoming "<ORG>ail"), and it also lets a
+    single high-scoring fragment create an entity that word-level averaging rejects.
     """
-    return pipeline("ner", model=model_name, aggregation_strategy="simple")
+    return pipeline("ner", model=model_name, aggregation_strategy="average")
 
 
 def detect(model, text: str) -> list[Span]:

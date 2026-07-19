@@ -2,27 +2,20 @@
 
 Each detector module exposes the same interface (`load()` and
 `detect(model, text)`), so a configuration is just a list of detectors in priority
-order. Adding a model or a new combination is a one-line change to SYSTEMS.
+order. Adding a model or a new combination is a one-line change in configs.py.
 
     uv run python src/benchmark.py
 """
 
-import hf_detector
+import configs
 import pipeline
-import regex_detector
 import scoring
-import spacy_detector
 from anonymizer import anonymize_spans
 from dataset import load_rows
 
-# Each system is (short name, detectors in priority order). Regex goes first so its
-# precise, fixed-shape matches win any overlap against a model's guess.
-SYSTEMS = [
-    ("spaCy sm", [spacy_detector]),
-    ("HF bert", [hf_detector]),
-    ("spaCy+regex", [regex_detector, spacy_detector]),
-    ("HF+regex", [regex_detector, hf_detector]),
-]
+# The configurations live in configs.py and are shared with the API, so the two can
+# never drift apart.
+SYSTEMS = [(c.label, c.detectors) for c in configs.CONFIGURATIONS]
 
 # Models are expensive to load, so load each detector's model only once.
 _loaded: dict = {}

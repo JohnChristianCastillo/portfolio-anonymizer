@@ -103,6 +103,52 @@ Regenerate the report and its charts:
 uv run python src/make_report.py
 ```
 
+## API
+
+```bash
+scripts/03_serve.sh     # or scripts\03_serve.ps1
+```
+
+Interactive documentation is then served at <http://127.0.0.1:8000/docs>, which
+doubles as a demo surface. Models are loaded once at startup, not per request.
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /anonymize` | Anonymize a text; returns the result and the entities found |
+| `GET /configs` | List the detector configurations available |
+| `GET /health` | Liveness, and how many models are loaded |
+
+```bash
+curl -X POST http://127.0.0.1:8000/anonymize \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Maria Lopez works at Contoso Ltd.", "config": "spacy+regex"}'
+```
+
+```json
+{
+  "config": "spacy+regex",
+  "anonymized": "<PERSON> works at <ORG>",
+  "entities": [
+    {"start": 0, "end": 11, "label": "PERSON", "text": "Maria Lopez"},
+    {"start": 21, "end": 33, "label": "ORG", "text": "Contoso Ltd."}
+  ],
+  "entity_counts": {"PERSON": 1, "ORG": 1},
+  "original": null
+}
+```
+
+- `config` is optional and defaults to the best-scoring configuration.
+- Entity offsets are returned so a caller can highlight them in the original text.
+- `include_original: true` echoes the input back, for a side-by-side before/after
+  view. It is off by default: the input still contains the sensitive data, so
+  returning it would place that text anywhere the response is stored or logged.
+
+**Why FastAPI over Flask:** request validation comes from the type declarations
+(pydantic returns a clear 422 on a bad body before the handler runs), the OpenAPI
+`/docs` page is generated automatically and serves as the demo, the response shape
+is declared rather than incidental, and ASGI leaves async available for slow model
+calls. Flask would work, but each of those would need extra code or an add-on.
+
 ## Dataset format
 
 Datasets are not committed. Place a semicolon-separated CSV at
@@ -125,13 +171,15 @@ src/
   regex_detector.py   rule-based detector
   spacy_detector.py   spaCy detector
   hf_detector.py      HuggingFace transformer detector
+  configs.py          the detector configurations, shared by benchmark and API
   pipeline.py         merge detectors, resolve overlapping spans
   anonymizer.py       replace spans with placeholders
   scoring.py          precision / recall / F1 and model comparison
   benchmark.py        run every configuration
+  api.py              HTTP API
   make_report.py      generate report/REPORT.md
   make_charts.py      render the report charts
-scripts/              numbered setup and run scripts (.sh and .ps1)
+scripts/              numbered setup, run and serve scripts (.sh and .ps1)
 report/               generated benchmark report and charts
 ```
 
