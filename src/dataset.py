@@ -12,5 +12,12 @@ def load_rows(path: Path = DATA_FILE) -> list[dict[str, str]]:
 
     Each row has `text` (the original) and `label` (the expected anonymized answer).
     """
+    if not path.exists():
+        raise FileNotFoundError(
+            f"No benchmark file at {path}\n"
+            "Datasets are not committed. Place a semicolon-separated CSV with "
+            "'text' and 'label' columns at that path, or pass a different one. "
+            "The README describes the expected format."
+        )
     with path.open(encoding="utf-8", newline="") as f:
         return list(csv.DictReader(f, delimiter=";"))

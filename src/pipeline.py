@@ -1,18 +1,14 @@
 """Combine several detectors into one list of non-overlapping spans.
 
-This is the complexity the regex layer introduces. With a single detector the spans
-never overlap, so anonymizing was trivial. Once regex rules and an NER model both
-look at the same text, two detectors can claim overlapping characters (for example
-a regex EMAIL_ADDRESS covering "john.smith@apple.com" while the model tags "apple"
-inside it as an ORG). Replacing both would corrupt the text, so conflicts must be
-resolved before anything is replaced.
+Two detectors can claim overlapping characters: a regex EMAIL_ADDRESS may cover a
+whole address while a model tags part of it as an ORG. Replacing overlapping spans
+would corrupt the text, so conflicts are resolved before any replacement happens.
 
-The rule, in order:
-  1. Detector priority. Detectors are passed in priority order, earliest wins.
-     Regex goes first: for fixed-shape data (email, phone, IBAN) it is far more
-     precise than a model guessing from context.
-  2. Longer span wins. A longer match is the more complete entity.
-  3. First occurrence, to keep the result deterministic.
+Resolution order:
+  1. Detector priority, earliest first. Regex is passed before the models, since
+     fixed-shape data is matched more reliably by a rule than inferred from context.
+  2. Longer span, as the more complete entity.
+  3. First occurrence, for deterministic output.
 Any span overlapping an already-accepted span is dropped.
 """
 

@@ -215,7 +215,7 @@ if __name__ == "__main__":
     # Self-check on tiny hand-made examples (no model needed).
     demo = [
         ("<PERSON> likes <LOCATION>", "<PERSON> likes <LOCATION>"),  # perfect
-        ("John likes <LOCATION>", "<PERSON> likes <LOCATION>"),      # missed PERSON
+        ("Maria likes <LOCATION>", "<PERSON> likes <LOCATION>"),     # missed PERSON
         ("<PERSON> likes <ORG>", "<PERSON> likes <LOCATION>"),       # wrong label
     ]
     score(demo)
