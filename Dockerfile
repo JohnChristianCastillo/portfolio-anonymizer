@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 # Build the frontend, then serve it + the API from the Python backend as one image.
 
 # --- stage 1: build the SPA ---
@@ -25,7 +26,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Dependencies first so this layer is cached while application code changes.
 # torch resolves to the CPU wheel (see pyproject), which keeps the image small.
 COPY pyproject.toml uv.lock README.md ./
-RUN uv sync --frozen --no-dev
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev
 
 # Copy only the model-loading code needed to bake the HuggingFace cache. Keeping
 # this separate from the rest of the app source means unrelated API/frontend edits
