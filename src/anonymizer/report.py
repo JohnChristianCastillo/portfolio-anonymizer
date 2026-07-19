@@ -33,12 +33,28 @@ def detail_table(report: scoring.Report) -> str:
             continue
         precision, recall, f1 = scoring.precision_recall_f1(tp, fp, fn)
         rows.append(
-            [label, str(tp), str(fp), str(fn), f"{precision:.2f}", f"{recall:.2f}", f"{f1:.2f}"]
+            [
+                label,
+                str(tp),
+                str(fp),
+                str(fn),
+                f"{precision:.2f}",
+                f"{recall:.2f}",
+                f"{f1:.2f}",
+            ]
         )
     tp, fp, fn = report.micro_counts()
     precision, recall, f1 = scoring.precision_recall_f1(tp, fp, fn)
     rows.append(
-        ["**micro-average**", str(tp), str(fp), str(fn), f"{precision:.2f}", f"{recall:.2f}", f"{f1:.2f}"]
+        [
+            "**micro-average**",
+            str(tp),
+            str(fp),
+            str(fn),
+            f"{precision:.2f}",
+            f"{recall:.2f}",
+            f"{f1:.2f}",
+        ]
     )
     return markdown_table(["Label", "TP", "FP", "FN", "Precision", "Recall", "F1"], rows)
 

@@ -24,8 +24,18 @@ from difflib import SequenceMatcher
 
 # The 12 target labels, used to order the report.
 LABELS = [
-    "PERSON", "ORG", "JOB", "EMAIL_ADDRESS", "LOCATION", "AMOUNT",
-    "DATE_TIME", "UNIVERSITY", "PHONE_NUMBER", "URL", "IBAN", "SSN",
+    "PERSON",
+    "ORG",
+    "JOB",
+    "EMAIL_ADDRESS",
+    "LOCATION",
+    "AMOUNT",
+    "DATE_TIME",
+    "UNIVERSITY",
+    "PHONE_NUMBER",
+    "URL",
+    "IBAN",
+    "SSN",
 ]
 
 _PLACEHOLDER = re.compile(r"<([A-Z_]+)>")
@@ -55,7 +65,7 @@ class Tally:
     fp: Counter = field(default_factory=Counter)
     fn: Counter = field(default_factory=Counter)
 
-    def add(self, other: "Tally") -> None:
+    def add(self, other: Tally) -> None:
         self.tp.update(other.tp)
         self.fp.update(other.fp)
         self.fn.update(other.fn)
@@ -172,7 +182,9 @@ def score(pairs: list[tuple[str, str]]) -> Report:
     # "Micro-average": pool every label's counts into one total and score that,
     # so each entity counts equally (labels with more entities weigh more).
     p, r, f = precision_recall_f1(micro_tp, micro_fp, micro_fn)
-    print(f"{'MICRO-AVG':<14}{micro_tp:>4}{micro_fp:>4}{micro_fn:>4}{p:>8.2f}{r:>8.2f}{f:>8.2f}")
+    print(
+        f"{'MICRO-AVG':<14}{micro_tp:>4}{micro_fp:>4}{micro_fn:>4}{p:>8.2f}{r:>8.2f}{f:>8.2f}"
+    )
     print(f"\nExact row matches: {exact}/{report.rows}")
     return report
 
@@ -215,7 +227,7 @@ if __name__ == "__main__":
     # Self-check on tiny hand-made examples (no model needed).
     demo = [
         ("<PERSON> likes <LOCATION>", "<PERSON> likes <LOCATION>"),  # perfect
-        ("Maria likes <LOCATION>", "<PERSON> likes <LOCATION>"),     # missed PERSON
-        ("<PERSON> likes <ORG>", "<PERSON> likes <LOCATION>"),       # wrong label
+        ("Maria likes <LOCATION>", "<PERSON> likes <LOCATION>"),  # missed PERSON
+        ("<PERSON> likes <ORG>", "<PERSON> likes <LOCATION>"),  # wrong label
     ]
     score(demo)

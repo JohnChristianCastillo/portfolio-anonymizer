@@ -18,6 +18,20 @@ dependencies = [
 anonymizer-benchmark = "anonymizer.benchmark:main"
 anonymizer-report = "anonymizer.report:main"
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: loads the NER models; excluded from the quick suite that CI runs",
+]
+
+[tool.ruff]
+line-length = 90
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# pycodestyle, pyflakes, import sorting, pyupgrade, and common bug patterns.
+select = ["E", "F", "I", "UP", "B"]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -42,4 +56,6 @@ dev = [
     "ipykernel>=7.3.0",
     "matplotlib>=3.11.1",
     "nbconvert>=7.17.1",
+    "pytest>=9.1.1",
+    "ruff>=0.15.22",
 ]

@@ -27,8 +27,19 @@ SERIES_COLORS = {"Precision": "#2a78d6", "Recall": "#008300", "F1": "#e87ba4"}
 
 # Single-hue sequential ramp (light to dark) for the magnitude heatmap.
 BLUE_RAMP = [
-    "#cde2fb", "#b7d3f6", "#9ec5f4", "#86b6ef", "#6da7ec", "#5598e7",
-    "#3987e5", "#2a78d6", "#256abf", "#1c5cab", "#184f95", "#104281", "#0d366b",
+    "#cde2fb",
+    "#b7d3f6",
+    "#9ec5f4",
+    "#86b6ef",
+    "#6da7ec",
+    "#5598e7",
+    "#3987e5",
+    "#2a78d6",
+    "#256abf",
+    "#1c5cab",
+    "#184f95",
+    "#104281",
+    "#0d366b",
 ]
 SEQUENTIAL = LinearSegmentedColormap.from_list("blue_seq", BLUE_RAMP)
 
@@ -75,8 +86,10 @@ def overall_metrics(reports: dict[str, scoring.Report], out: Path) -> None:
     for index, (metric, color) in enumerate(SERIES_COLORS.items()):
         offsets = [p - group_width / 2 + bar_width * (index + 0.5) for p in positions]
         # A small width inset leaves a surface gap between adjacent bars.
-        bars = ax.bar(offsets, values[metric], bar_width * 0.88, label=metric, color=color)
-        for rect, value in zip(bars, values[metric]):
+        bars = ax.bar(
+            offsets, values[metric], bar_width * 0.88, label=metric, color=color
+        )
+        for rect, value in zip(bars, values[metric], strict=True):
             ax.text(
                 rect.get_x() + rect.get_width() / 2,
                 value + 0.02,
@@ -102,7 +115,9 @@ def overall_metrics(reports: dict[str, scoring.Report], out: Path) -> None:
     ax.yaxis.grid(True, color=GRIDLINE, linewidth=1.0, linestyle="-")
     ax.set_axisbelow(True)
     _strip_chrome(ax)
-    ax.legend(frameon=False, ncol=3, loc="upper left", bbox_to_anchor=(0, 1.02), fontsize=9)
+    ax.legend(
+        frameon=False, ncol=3, loc="upper left", bbox_to_anchor=(0, 1.02), fontsize=9
+    )
 
     fig.tight_layout()
     fig.savefig(out, dpi=200)
@@ -122,9 +137,9 @@ def metric_comparison(reports: dict[str, scoring.Report], out: Path) -> None:
         scores["F1"].append(f1)
 
     fig, axes = plt.subplots(1, 3, figsize=(12, 4.4), sharey=True)
-    for ax, metric in zip(axes, scores):
+    for ax, metric in zip(axes, scores, strict=True):
         bars = ax.bar(names, scores[metric], width=0.5, color=SERIES_COLORS["Precision"])
-        for rect, value in zip(bars, scores[metric]):
+        for rect, value in zip(bars, scores[metric], strict=True):
             ax.text(
                 rect.get_x() + rect.get_width() / 2,
                 value + 0.02,

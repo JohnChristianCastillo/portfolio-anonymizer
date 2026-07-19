@@ -216,6 +216,28 @@ For the short texts this tool handles, the difference is marginal: the model is
 is declared rather than incidental, and ASGI leaves async available for slow model
 calls. Flask would work, but each of those would need extra code or an add-on.
 
+## Tests and linting
+
+```bash
+uv run pytest                 # everything
+uv run pytest -m "not slow"   # skips the tests that load the models
+uv run ruff check .           # lint
+uv run ruff format .          # format
+```
+
+The suite is deliberately split. Most of it exercises pure logic and needs no model
+loaded, so it runs in a few seconds: rule precedence, span replacement, overlap
+resolution between detectors, and the scoring arithmetic. The tests that start the
+API load real models and are marked `slow`.
+
+Continuous integration runs lint, a formatting check, the quick suite, and a front
+end build. The slow tests stay out of CI so it does not download model weights on
+every run.
+
+Two of these tests exist because of bugs that reached the code and were not caught by
+the benchmark: a national number being reported as a phone number, and a URL
+swallowing the sentence's final full stop. Both are now regression tests.
+
 ## Dataset format
 
 Datasets are not committed. Place a semicolon-separated CSV at
@@ -248,9 +270,10 @@ src/anonymizer/       the installed package
   report.py           generate report/REPORT.md
   charts.py           render the report charts
 frontend/
-  src/lib/            gateway admission, API client, types
+  src/lib/            gateway admission, API client, types, example inputs
   src/components/     the interactive demo
   src/App.tsx         page shell and content
+tests/                unit tests; the model-backed ones are marked slow
 scripts/              numbered setup, run and serve scripts (.sh and .ps1)
 report/               generated benchmark report and charts
 ```

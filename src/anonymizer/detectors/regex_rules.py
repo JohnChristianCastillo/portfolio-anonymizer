@@ -24,7 +24,10 @@ PATTERNS = [
     ("EMAIL_ADDRESS", re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")),
     # Requires an explicit scheme or www., so it will not swallow a bare word. The
     # path may not end on punctuation, so a sentence-ending period stays outside.
-    ("URL", re.compile(r"(?:https?://|www\.)[\w-]+(?:\.[\w-]+)+(?:/[\w\-./%?=&#]*[\w/])?")),
+    (
+        "URL",
+        re.compile(r"(?:https?://|www\.)[\w-]+(?:\.[\w-]+)+(?:/[\w\-./%?=&#]*[\w/])?"),
+    ),
     ("IBAN", re.compile(r"\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]{2,4}){2,7}\b")),
     # Belgian rijksregisternummer (82.05.30-025.56) or a US-style SSN.
     ("SSN", re.compile(r"\b\d{2}\.\d{2}\.\d{2}-\d{3}\.\d{2}\b|\b\d{3}-\d{2}-\d{4}\b")),
