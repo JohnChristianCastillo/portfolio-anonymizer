@@ -8,6 +8,8 @@ dependencies = [
     "click>=8.4.2",
     "en-core-web-sm",
     "spacy>=3.8.14",
+    "torch>=2.13.0",
+    "transformers>=5.14.1",
 ]
 
 [tool.uv.sources]

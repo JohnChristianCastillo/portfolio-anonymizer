@@ -7,4 +7,4 @@ $ErrorActionPreference = "Stop"
 Set-Location (Split-Path $PSScriptRoot -Parent)
 
 # `uv run` executes inside the project environment, syncing it first if needed.
-uv run python src/explore_spacy.py
+uv run python src/benchmark.py
