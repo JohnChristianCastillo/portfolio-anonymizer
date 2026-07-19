@@ -1,4 +1,4 @@
-import type { AnonymizeResult, DetectorConfig, GatewayStatus } from "./types";
+import type { AnonymizeResult, DetectorConfig } from "./types";
 
 // API base. In dev this is "/api" (Vite proxies to the backend). In production the
 // app is served under the gateway at /anonymizer, so calls go to "/anonymizer/api".
@@ -35,10 +35,6 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function fetchConfigs(): Promise<DetectorConfig[]> {
   return req<DetectorConfig[]>("/configs");
-}
-
-export function fetchGatewayStatus(appSlug: string): Promise<GatewayStatus> {
-  return req<GatewayStatus>(`/status?app=${encodeURIComponent(appSlug)}`);
 }
 
 export function anonymize(text: string, config: string): Promise<AnonymizeResult> {

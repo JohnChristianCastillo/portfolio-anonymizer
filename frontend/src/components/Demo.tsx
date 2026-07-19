@@ -1,12 +1,8 @@
 import { useEffect, useState } from "react";
 
-import { anonymize, fetchConfigs, fetchGatewayStatus } from "../lib/api";
-import type { AnonymizeResult, DetectorConfig, Entity, GatewayQuota } from "../lib/types";
-
-const SAMPLE =
-  "Maria Lopez is a data engineer at Contoso Ltd in Antwerp. " +
-  "Reach her at maria.lopez@contoso.example or +32 470 12 34 56, " +
-  "and see www.contoso.example for details.";
+import { anonymize, fetchConfigs } from "../lib/api";
+import { samples } from "../lib/samples";
+import type { AnonymizeResult, DetectorConfig, Entity } from "../lib/types";
 
 type Segment = { text: string; label: string | null };
 
@@ -41,27 +37,12 @@ function renderAnonymized(text: string) {
 }
 
 export function Demo({ admitted }: { admitted: boolean }) {
-  const [text, setText] = useState(SAMPLE);
+  const [text, setText] = useState(samples[0].text);
   const [configs, setConfigs] = useState<DetectorConfig[]>([]);
   const [config, setConfig] = useState("");
   const [result, setResult] = useState<AnonymizeResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [quota, setQuota] = useState<GatewayQuota | null>(null);
-  const [quotaLoading, setQuotaLoading] = useState(false);
-
-  async function refreshQuota() {
-    setQuotaLoading(true);
-    try {
-      const status = await fetchGatewayStatus("anonymizer");
-      setQuota(status.demo_quota);
-    } catch {
-      setQuota(null);
-    } finally {
-      setQuotaLoading(false);
-    }
-  }
-
   useEffect(() => {
     if (!admitted) return;
     fetchConfigs()
@@ -71,7 +52,6 @@ export function Demo({ admitted }: { admitted: boolean }) {
         if (preferred) setConfig(preferred.key);
       })
       .catch((e: Error) => setError(e.message));
-    refreshQuota();
   }, [admitted]);
 
   async function run() {
@@ -79,13 +59,20 @@ export function Demo({ admitted }: { admitted: boolean }) {
     setError(null);
     try {
       setResult(await anonymize(text, config));
-      await refreshQuota();
     } catch (e) {
+      // Includes the gateway's 429 when submissions come in too fast; the message
+      // is user-facing and rendered in the alert below.
       setError((e as Error).message);
-      await refreshQuota();
     } finally {
       setBusy(false);
     }
+  }
+
+  /** Load an example into the box, clearing any output from the previous one. */
+  function useSample(sampleText: string) {
+    setText(sampleText);
+    setResult(null);
+    setError(null);
   }
 
   const counts = result ? Object.entries(result.entity_counts) : [];
@@ -99,6 +86,21 @@ export function Demo({ admitted }: { admitted: boolean }) {
           returned.
         </p>
       </header>
+
+      <div className="samples">
+        <span className="samples__label">Examples</span>
+        {samples.map((sample) => (
+          <button
+            key={sample.name}
+            type="button"
+            title={sample.hint}
+            className={`chip chip--action${sample.text === text ? " chip--active" : ""}`}
+            onClick={() => useSample(sample.text)}
+          >
+            {sample.name}
+          </button>
+        ))}
+      </div>
 
       <textarea
         className="input"
@@ -128,29 +130,10 @@ export function Demo({ admitted }: { admitted: boolean }) {
         <button
           className="button"
           onClick={run}
-          disabled={
-            !admitted ||
-            busy ||
-            !config ||
-            text.trim().length === 0 ||
-            (quota?.remaining !== null && quota?.remaining !== undefined && quota.remaining <= 0)
-          }
+          disabled={!admitted || busy || !config || text.trim().length === 0}
         >
           {busy ? "Analyzing..." : "Anonymize"}
         </button>
-
-        <div
-          className={`quota ${quota?.banned ? "quota--danger" : ""}`}
-          title={quota?.location ? `${quota.location.city ?? ""} ${quota.location.postal_code ?? ""}`.trim() : undefined}
-        >
-          {quotaLoading
-            ? "..."
-            : quota
-              ? quota.remaining === null
-                ? "∞"
-                : `${quota.remaining} left`
-              : "—"}
-        </div>
       </div>
 
       {error && (

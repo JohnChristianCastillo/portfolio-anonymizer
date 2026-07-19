@@ -177,7 +177,7 @@ unrestricted service.
 | Admission queue | reverse proxy | a handful of concurrent sessions | Caps how many visitors are active at once |
 | Allowed session tiers | `ANONYMIZER_REQUIRE_TIER` | unset (open) | Restricts who may invoke a model |
 | Maximum input length | `ANONYMIZER_MAX_TEXT_CHARS` | 10000 | Public and invited sessions get a larger but still bounded paste size |
-| Demo submissions | gateway proxy | 5 per IP per app per day | Keeps the public demo usable without exhausting the laptop |
+| Submission rate | gateway proxy | 6 per IP per minute | Throttles bursts; the admission cap limits how many visitors are active, not how fast each one submits |
 | Concurrent inferences | `ANONYMIZER_MAX_CONCURRENCY` | 2 | Sync handlers run in a 40-thread pool; without a bound, a burst could saturate the host |
 
 Notes:
@@ -188,8 +188,9 @@ Notes:
   no tier arrives, the request is refused: it fails closed.
 - Public and invited sessions are capped at 10,000 characters per anonymize
   submission; admin sessions are exempt from that text limit.
-- The gateway counts anonymize submissions separately per app and per IP, so one
-  app's demo quota does not block the other live portfolio apps.
+- The rate limit is keyed per app and per IP, so throttling here never blocks the
+  other live portfolio apps. There is no cap on total submissions: overall capacity
+  is governed by the gateway's per-app concurrency limits instead.
 - Over the concurrency limit a request waits briefly, then gets `503` rather than
   queueing indefinitely.
 - `GET /health` reports the limits actually in force, which is the quickest way to
