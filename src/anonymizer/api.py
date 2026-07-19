@@ -32,8 +32,8 @@ _models: dict = {}
 # what each one asks for. All three limits are inert unless configured, so anyone
 # running this repo locally gets an unrestricted service.
 
-# Longest accepted input. A large paste is the cheapest way to burn CPU.
-MAX_TEXT_CHARS = int(os.environ.get("ANONYMIZER_MAX_TEXT_CHARS", "20000"))
+# Longest accepted input for public and invited sessions. Admin is exempt.
+LIMITED_MAX_TEXT_CHARS = int(os.environ.get("ANONYMIZER_MAX_TEXT_CHARS", "10000"))
 
 # Sync handlers run in a thread pool (40 threads by default), so without a bound
 # that many inferences could run at once. Requests over the limit wait briefly and
@@ -68,6 +68,14 @@ def _check_tier(session_tier: str | None) -> None:
         )
 
 
+def _text_limit_for(session_tier: str | None) -> int | None:
+    if not _REQUIRED_TIERS:
+        return None
+    if session_tier == "admin":
+        return None
+    return LIMITED_MAX_TEXT_CHARS
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     for configuration in configs.CONFIGURATIONS:
@@ -87,11 +95,7 @@ app = FastAPI(
 
 
 class AnonymizeRequest(BaseModel):
-    text: str = Field(
-        min_length=1,
-        max_length=MAX_TEXT_CHARS,
-        description="Text to anonymize.",
-    )
+    text: str = Field(min_length=1, description="Text to anonymize.")
     config: str = Field(
         default=configs.DEFAULT_KEY,
         description="Which detector configuration to use; see GET /configs.",
@@ -140,7 +144,8 @@ def health() -> dict:
         "models_loaded": len(_models),
         "device": "gpu" if hf_model.device_index() >= 0 else "cpu",
         "limits": {
-            "max_text_chars": MAX_TEXT_CHARS,
+            "limited_text_chars": LIMITED_MAX_TEXT_CHARS,
+            "admin_text_chars": "unlimited",
             "max_concurrency": _MAX_CONCURRENT,
             "required_tiers": sorted(_REQUIRED_TIERS) or "open",
         },
@@ -171,6 +176,16 @@ def anonymize(
     caller can highlight them in the original.
     """
     _check_tier(x_session_tier)
+
+    text_limit = _text_limit_for(x_session_tier)
+    if text_limit is not None and len(request.text) > text_limit:
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                f"This deployment limits public and invited sessions to {text_limit} "
+                "characters per submission. Admin sessions are unlimited."
+            ),
+        )
 
     configuration = configs.by_key(request.config)
     if configuration is None:

@@ -117,7 +117,11 @@ export function Demo({ admitted }: { admitted: boolean }) {
         </button>
       </div>
 
-      {error && <p className="error">{error}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
 
       {result && (
         <>
