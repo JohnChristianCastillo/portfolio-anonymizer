@@ -25,8 +25,23 @@ LABEL_MAP = {
 }
 
 
+def device_index() -> int:
+    """Which device the transformer should run on: 0 = first GPU, -1 = CPU.
+
+    Note this reports CPU whenever the installed torch build has no CUDA support,
+    regardless of the hardware present. The default install pins the CPU-only wheel
+    (see pyproject), so a machine with a GPU needs a CUDA build of torch before this
+    can return a GPU. For short texts the difference is marginal either way.
+    """
+    try:
+        import torch
+    except ImportError:
+        return -1
+    return 0 if torch.cuda.is_available() else -1
+
+
 def load(model_name: str = MODEL_NAME):
-    """Load the HuggingFace NER pipeline.
+    """Load the HuggingFace NER pipeline, on a GPU when one is usable.
 
     A transformer splits words into sub-word tokens, so the aggregation strategy
     decides how those are recombined into entities. 'average' is used because it
@@ -35,7 +50,12 @@ def load(model_name: str = MODEL_NAME):
     mid-word and corrupts the text ("Email" becoming "<ORG>ail"), and it also lets a
     single high-scoring fragment create an entity that word-level averaging rejects.
     """
-    return pipeline("ner", model=model_name, aggregation_strategy="average")
+    return pipeline(
+        "ner",
+        model=model_name,
+        aggregation_strategy="average",
+        device=device_index(),
+    )
 
 
 def detect(model, text: str) -> list[Span]:

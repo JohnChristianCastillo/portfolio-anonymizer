@@ -1,0 +1,18 @@
+# Keep the build context small, and keep local-only material out of the image.
+.git
+.venv
+__pycache__
+*.pyc
+
+frontend/node_modules
+frontend/dist
+*.tsbuildinfo
+
+# Local-only: planning notes, the findings notebook, datasets, saved runs.
+_local
+data
+output
+notebooks
+
+# Generated locally; not needed to run the service.
+report

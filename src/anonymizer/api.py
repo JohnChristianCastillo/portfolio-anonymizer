@@ -9,19 +9,63 @@ requires an admitted session, so model inference sits behind the queue while the
 page itself stays open to anyone.
 """
 
+import os
+import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import APIRouter, FastAPI, HTTPException
+from fastapi import APIRouter, FastAPI, Header, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import configs, pipeline
+from .detectors import hf_model
 from .spans import anonymize_spans
 
 # Loaded models keyed by detector module. A transformer takes seconds to load, so
 # every model is loaded once at startup rather than per request.
 _models: dict = {}
+
+# --- limits -----------------------------------------------------------------
+# Running a model on someone else's text is expensive, so a public deployment needs
+# more than the gateway's admission queue, which caps concurrent visitors but not
+# what each one asks for. All three limits are inert unless configured, so anyone
+# running this repo locally gets an unrestricted service.
+
+# Longest accepted input. A large paste is the cheapest way to burn CPU.
+MAX_TEXT_CHARS = int(os.environ.get("ANONYMIZER_MAX_TEXT_CHARS", "20000"))
+
+# Sync handlers run in a thread pool (40 threads by default), so without a bound
+# that many inferences could run at once. Requests over the limit wait briefly and
+# are then refused rather than queueing forever.
+_MAX_CONCURRENT = int(os.environ.get("ANONYMIZER_MAX_CONCURRENCY", "2"))
+_ACQUIRE_TIMEOUT_SECONDS = 15
+_inference_slots = threading.BoundedSemaphore(_MAX_CONCURRENT)
+
+# Session tiers allowed to call the model, comma separated (admin, invited,
+# anonymous). Empty means open to everyone. The gateway verifies the tier and sends
+# it as X-Session-Tier, stripping any value supplied by the client, so this cannot
+# be spoofed from outside.
+_REQUIRED_TIERS = {
+    tier.strip()
+    for tier in os.environ.get("ANONYMIZER_REQUIRE_TIER", "").split(",")
+    if tier.strip()
+}
+
+
+def _check_tier(session_tier: str | None) -> None:
+    """Reject callers whose session tier is not allowed for this deployment."""
+    if not _REQUIRED_TIERS:
+        return  # unconfigured: open, which is how a local run behaves
+    if session_tier not in _REQUIRED_TIERS:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "This deployment is limited to "
+                f"{' or '.join(sorted(_REQUIRED_TIERS))} sessions. "
+                "Run the project locally for unrestricted access."
+            ),
+        )
 
 
 @asynccontextmanager
@@ -43,7 +87,11 @@ app = FastAPI(
 
 
 class AnonymizeRequest(BaseModel):
-    text: str = Field(min_length=1, description="Text to anonymize.")
+    text: str = Field(
+        min_length=1,
+        max_length=MAX_TEXT_CHARS,
+        description="Text to anonymize.",
+    )
     config: str = Field(
         default=configs.DEFAULT_KEY,
         description="Which detector configuration to use; see GET /configs.",
@@ -86,7 +134,17 @@ api = APIRouter(prefix="/api")
 
 @app.get("/health", summary="Liveness check")
 def health() -> dict:
-    return {"status": "ok", "models_loaded": len(_models)}
+    """Liveness, plus the limits actually in force, to confirm a deployment."""
+    return {
+        "status": "ok",
+        "models_loaded": len(_models),
+        "device": "gpu" if hf_model.device_index() >= 0 else "cpu",
+        "limits": {
+            "max_text_chars": MAX_TEXT_CHARS,
+            "max_concurrency": _MAX_CONCURRENT,
+            "required_tiers": sorted(_REQUIRED_TIERS) or "open",
+        },
+    }
 
 
 @api.get("/configs", summary="List the available detector configurations")
@@ -103,12 +161,17 @@ def list_configs() -> list[dict]:
 
 
 @api.post("/anonymize", response_model=AnonymizeResponse, summary="Anonymize a text")
-def anonymize(request: AnonymizeRequest) -> AnonymizeResponse:
+def anonymize(
+    request: AnonymizeRequest,
+    x_session_tier: str | None = Header(default=None, include_in_schema=False),
+) -> AnonymizeResponse:
     """Replace every detected entity with its `<LABEL>` placeholder.
 
     Returns the anonymized text plus the entities found, with character offsets so a
     caller can highlight them in the original.
     """
+    _check_tier(x_session_tier)
+
     configuration = configs.by_key(request.config)
     if configuration is None:
         known = ", ".join(c.key for c in configs.CONFIGURATIONS)
@@ -118,7 +181,17 @@ def anonymize(request: AnonymizeRequest) -> AnonymizeResponse:
         )
 
     detectors_with_models = [(d, _models[d]) for d in configuration.detectors]
-    spans = pipeline.detect_all(detectors_with_models, request.text)
+
+    # Bound how many inferences run at once, so a burst cannot saturate the host.
+    if not _inference_slots.acquire(timeout=_ACQUIRE_TIMEOUT_SECONDS):
+        raise HTTPException(
+            status_code=503,
+            detail="The service is busy running other requests. Try again shortly.",
+        )
+    try:
+        spans = pipeline.detect_all(detectors_with_models, request.text)
+    finally:
+        _inference_slots.release()
 
     entities = [
         Entity(start=start, end=end, label=label, text=request.text[start:end])
@@ -142,6 +215,12 @@ app.include_router(api)
 
 # Serve the built front end as the app shell. Mounted last so it never shadows the
 # API routes, and skipped when the front end has not been built yet (plain dev).
-_FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+# ANONYMIZER_STATIC_DIR lets the container point at wherever it copied the build.
+_FRONTEND_DIST = Path(
+    os.environ.get(
+        "ANONYMIZER_STATIC_DIR",
+        Path(__file__).resolve().parents[2] / "frontend" / "dist",
+    )
+)
 if _FRONTEND_DIST.is_dir():
     app.mount("/", StaticFiles(directory=_FRONTEND_DIST, html=True), name="frontend")

@@ -165,6 +165,45 @@ curl -X POST http://127.0.0.1:8000/anonymize \
   view. It is off by default: the input still contains the sensitive data, so
   returning it would place that text anywhere the response is stored or logged.
 
+## Limits and abuse protection
+
+Every request runs a language model on the host, so an unprotected public endpoint
+is an easy way to exhaust a machine. Four independent limits apply, and **all of the
+app-level ones are inert unless configured**, so running this repo locally gives an
+unrestricted service.
+
+| Limit | Where | Default | Purpose |
+|---|---|---|---|
+| Admission queue | reverse proxy | a handful of concurrent sessions | Caps how many visitors are active at once |
+| Allowed session tiers | `ANONYMIZER_REQUIRE_TIER` | unset (open) | Restricts who may invoke a model |
+| Maximum input length | `ANONYMIZER_MAX_TEXT_CHARS` | 20000 | A large paste is the cheapest way to burn CPU |
+| Concurrent inferences | `ANONYMIZER_MAX_CONCURRENCY` | 2 | Sync handlers run in a 40-thread pool; without a bound, a burst could saturate the host |
+
+Notes:
+
+- `ANONYMIZER_REQUIRE_TIER` takes a comma-separated list (for example
+  `admin,invited`). The session tier is supplied by the reverse proxy, which strips
+  any value sent by the client, so it cannot be spoofed. When the variable is set and
+  no tier arrives, the request is refused: it fails closed.
+- Over the concurrency limit a request waits briefly, then gets `503` rather than
+  queueing indefinitely.
+- `GET /health` reports the limits actually in force, which is the quickest way to
+  confirm a deployment is configured as intended.
+
+## Hardware
+
+Inference runs on the GPU when the installed PyTorch build supports one, and on the
+CPU otherwise; `GET /health` reports which. The default install pins the **CPU-only**
+PyTorch wheel, because the CUDA build adds gigabytes to a container image for
+hardware the server does not have. To use a GPU, install a CUDA build instead:
+
+```bash
+uv pip install torch --index-url https://download.pytorch.org/whl/cu124
+```
+
+For the short texts this tool handles, the difference is marginal: the model is
+`bert-base`, and a single request is dominated by fixed overhead rather than compute.
+
 **Why FastAPI over Flask:** request validation comes from the type declarations
 (pydantic returns a clear 422 on a bad body before the handler runs), the OpenAPI
 `/docs` page is generated automatically and serves as the demo, the response shape
