@@ -10,7 +10,7 @@ deliberately left to the NER models, which already handle them well in context.
 
 import re
 
-from anonymizer import Span
+from ..spans import Span
 
 MODEL_NAME = "regex rules"
 

@@ -12,7 +12,7 @@ Resolution order:
 Any span overlapping an already-accepted span is dropped.
 """
 
-from anonymizer import Span
+from .spans import Span
 
 
 def _overlaps(start: int, end: int, accepted: list[Span]) -> bool:

@@ -11,6 +11,11 @@ dist/
 venv/
 env/
 
+# Front end (dist/ is covered above; built at deploy time, never committed)
+node_modules/
+*.local
+*.tsbuildinfo
+
 # Models (never committed; downloaded/run locally)
 .cache/
 *.model

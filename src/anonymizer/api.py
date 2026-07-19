@@ -1,18 +1,23 @@
-"""HTTP API exposing the anonymizer.
+"""HTTP API exposing the anonymizer, plus the built front end.
 
-    uv run uvicorn api:app --app-dir src
+    uv run uvicorn api:app --app-dir src --port 8400
 
 Interactive documentation is served at /docs.
+
+Data endpoints live under /api. Behind the portfolio gateway that prefix is what
+requires an admitted session, so model inference sits behind the queue while the
+page itself stays open to anyone.
 """
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-import configs
-import pipeline
-from anonymizer import anonymize_spans
+from . import configs, pipeline
+from .spans import anonymize_spans
 
 # Loaded models keyed by detector module. A transformer takes seconds to load, so
 # every model is loaded once at startup rather than per request.
@@ -75,12 +80,16 @@ class AnonymizeResponse(BaseModel):
     )
 
 
+# Data endpoints. The /api prefix is what the gateway gates on.
+api = APIRouter(prefix="/api")
+
+
 @app.get("/health", summary="Liveness check")
 def health() -> dict:
     return {"status": "ok", "models_loaded": len(_models)}
 
 
-@app.get("/configs", summary="List the available detector configurations")
+@api.get("/configs", summary="List the available detector configurations")
 def list_configs() -> list[dict]:
     return [
         {
@@ -93,7 +102,7 @@ def list_configs() -> list[dict]:
     ]
 
 
-@app.post("/anonymize", response_model=AnonymizeResponse, summary="Anonymize a text")
+@api.post("/anonymize", response_model=AnonymizeResponse, summary="Anonymize a text")
 def anonymize(request: AnonymizeRequest) -> AnonymizeResponse:
     """Replace every detected entity with its `<LABEL>` placeholder.
 
@@ -127,3 +136,12 @@ def anonymize(request: AnonymizeRequest) -> AnonymizeResponse:
         entity_counts=counts,
         original=request.text if request.include_original else None,
     )
+
+
+app.include_router(api)
+
+# Serve the built front end as the app shell. Mounted last so it never shadows the
+# API routes, and skipped when the front end has not been built yet (plain dev).
+_FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+if _FRONTEND_DIST.is_dir():
+    app.mount("/", StaticFiles(directory=_FRONTEND_DIST, html=True), name="frontend")

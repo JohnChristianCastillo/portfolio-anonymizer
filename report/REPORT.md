@@ -1,6 +1,6 @@
 # Benchmark report
 
-Regenerate with `uv run python src/make_report.py`. Evaluated on a labelled dataset
+Regenerate with `uv run anonymizer-report`. Evaluated on a labelled dataset
 of 10 texts against the 12 target entity labels.
 
 ## Configurations compared

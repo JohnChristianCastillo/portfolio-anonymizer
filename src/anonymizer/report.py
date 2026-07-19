@@ -1,6 +1,6 @@
 """Generate the benchmark report and its charts into report/.
 
-    uv run python src/make_report.py
+    uv run anonymizer-report
 
 Writes aggregate values only: label names, counts and metrics, never the evaluated
 text.
@@ -8,12 +8,10 @@ text.
 
 from pathlib import Path
 
-import benchmark
-import make_charts
-import scoring
-from dataset import load_rows
+from . import benchmark, charts, scoring
+from .dataset import load_rows
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 REPORT_DIR = PROJECT_ROOT / "report"
 REPORT_FILE = REPORT_DIR / "REPORT.md"
 
@@ -70,7 +68,7 @@ def build(reports: dict[str, scoring.Report], row_count: int, charts: list[str])
 
     return f"""# Benchmark report
 
-Regenerate with `uv run python src/make_report.py`. Evaluated on a labelled dataset
+Regenerate with `uv run anonymizer-report`. Evaluated on a labelled dataset
 of {row_count} texts against the 12 target entity labels.
 
 ## Configurations compared
@@ -164,9 +162,9 @@ def main() -> None:
         reports[name] = scoring.summarize(benchmark.evaluate(detectors, rows))
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    charts = make_charts.build_charts(reports, REPORT_DIR)
-    REPORT_FILE.write_text(build(reports, len(rows), charts), encoding="utf-8")
-    print(f"Wrote {REPORT_FILE.relative_to(PROJECT_ROOT)} and {len(charts)} charts")
+    chart_files = charts.build_charts(reports, REPORT_DIR)
+    REPORT_FILE.write_text(build(reports, len(rows), chart_files), encoding="utf-8")
+    print(f"Wrote {REPORT_FILE.relative_to(PROJECT_ROOT)} and {len(chart_files)} charts")
 
 
 if __name__ == "__main__":

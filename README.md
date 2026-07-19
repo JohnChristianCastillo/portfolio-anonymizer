@@ -28,9 +28,9 @@ span, and adding a model is a one-line change.
        v
 +--------------------------------------------+
 | Detectors  (one shared interface)          |
-|   regex_detector    priority 0  (rules)    |
-|   spacy_detector    priority 1  (model)    |
-|   hf_detector       priority 1  (model)    |
+|   regex_rules      priority 0  (rules)     |
+|   spacy_model      priority 1  (model)     |
+|   hf_model         priority 1  (model)     |
 +--------------------------------------------+
        |  spans: (start, end, label)
        v
@@ -42,7 +42,7 @@ span, and adding a model is a one-line change.
        |  non-overlapping spans
        v
 +--------------------------------------------+
-| anonymizer.anonymize_spans                 |
+| spans.anonymize_spans                      |
 |   replace each span right-to-left          |
 +--------------------------------------------+
        |  anonymized text
@@ -100,8 +100,30 @@ scripts/02_run.sh       # or scripts\02_run.ps1 - runs the benchmark
 Regenerate the report and its charts:
 
 ```bash
-uv run python src/make_report.py
+uv run anonymizer-report
 ```
+
+## Web app
+
+A React front end provides the interactive demo: paste text, pick a detector
+configuration, and see the detected entities and the anonymized output side by side.
+
+Local development (two terminals):
+
+```bash
+scripts/03_serve.sh              # backend on :8400
+cd frontend && npm install && npm run dev   # Vite on :5173, proxies /api to :8400
+```
+
+Build for deployment:
+
+```bash
+cd frontend && npm run build     # -> frontend/dist, served by the backend at /
+```
+
+The production build sets its base path to `/anonymizer/` because the app is served
+under that slug, so open the Vite dev server (not `:8400` directly) when working
+locally. `node_modules/` and `dist/` are not committed.
 
 ## API
 
@@ -166,19 +188,24 @@ Maria Lopez works for Contoso Ltd.;<PERSON> works for <ORG>.
 ## Project layout
 
 ```
-src/
+src/anonymizer/       the installed package
   dataset.py          load the labelled rows
-  regex_detector.py   rule-based detector
-  spacy_detector.py   spaCy detector
-  hf_detector.py      HuggingFace transformer detector
+  detectors/
+    regex_rules.py    rule-based detector
+    spacy_model.py    spaCy detector
+    hf_model.py       HuggingFace transformer detector
   configs.py          the detector configurations, shared by benchmark and API
   pipeline.py         merge detectors, resolve overlapping spans
-  anonymizer.py       replace spans with placeholders
+  spans.py            the Span type and placeholder replacement
   scoring.py          precision / recall / F1 and model comparison
   benchmark.py        run every configuration
   api.py              HTTP API
-  make_report.py      generate report/REPORT.md
-  make_charts.py      render the report charts
+  report.py           generate report/REPORT.md
+  charts.py           render the report charts
+frontend/
+  src/lib/            gateway admission, API client, types
+  src/components/     the interactive demo
+  src/App.tsx         page shell and content
 scripts/              numbered setup, run and serve scripts (.sh and .ps1)
 report/               generated benchmark report and charts
 ```

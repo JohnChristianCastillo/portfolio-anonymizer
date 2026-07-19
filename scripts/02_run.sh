@@ -8,4 +8,4 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # `uv run` executes inside the project environment, syncing it first if needed.
-uv run python src/benchmark.py
+uv run anonymizer-benchmark

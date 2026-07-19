@@ -3,7 +3,8 @@
 import csv
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+# src/anonymizer/dataset.py -> up through anonymizer, src, to the project root.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_FILE = PROJECT_ROOT / "data" / "benchmark.csv"
 
 

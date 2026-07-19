@@ -2,9 +2,7 @@
 
 from dataclasses import dataclass
 
-import hf_detector
-import regex_detector
-import spacy_detector
+from .detectors import hf_model, regex_rules, spacy_model
 
 
 @dataclass(frozen=True)
@@ -17,10 +15,10 @@ class Configuration:
 
 
 CONFIGURATIONS = [
-    Configuration("spacy", "spaCy sm", [spacy_detector]),
-    Configuration("hf", "HF bert", [hf_detector]),
-    Configuration("spacy+regex", "spaCy+regex", [regex_detector, spacy_detector]),
-    Configuration("hf+regex", "HF+regex", [regex_detector, hf_detector]),
+    Configuration("spacy", "spaCy sm", [spacy_model]),
+    Configuration("hf", "HF bert", [hf_model]),
+    Configuration("spacy+regex", "spaCy+regex", [regex_rules, spacy_model]),
+    Configuration("hf+regex", "HF+regex", [regex_rules, hf_model]),
 ]
 
 # Best F1 in the benchmark, so it is the sensible default for the API.

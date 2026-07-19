@@ -7,7 +7,7 @@ from huggingface_hub.utils import logging as hub_logging
 from transformers import pipeline
 from transformers.utils import logging as hf_logging
 
-from anonymizer import Span
+from ..spans import Span
 
 # Keep output clean: no info banners, hub notices, or weight-loading progress bars.
 hf_logging.set_verbosity_error()

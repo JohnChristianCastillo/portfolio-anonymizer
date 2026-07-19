@@ -5,7 +5,7 @@ Detector interface: `detect(model, text) -> list[Span]`.
 
 import spacy
 
-from anonymizer import Span
+from ..spans import Span
 
 MODEL_NAME = "en_core_web_sm"
 

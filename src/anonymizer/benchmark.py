@@ -4,14 +4,12 @@ Each detector module exposes the same interface (`load()` and
 `detect(model, text)`), so a configuration is just a list of detectors in priority
 order. Adding a model or a new combination is a one-line change in configs.py.
 
-    uv run python src/benchmark.py
+    uv run anonymizer-benchmark
 """
 
-import configs
-import pipeline
-import scoring
-from anonymizer import anonymize_spans
-from dataset import load_rows
+from . import configs, pipeline, scoring
+from .dataset import load_rows
+from .spans import anonymize_spans
 
 # The configurations live in configs.py and are shared with the API, so the two can
 # never drift apart.
