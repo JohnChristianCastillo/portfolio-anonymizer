@@ -194,6 +194,25 @@ select:focus-visible,
   margin-top: 14px;
 }
 
+.quota {
+  margin-left: auto;
+  min-width: 88px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg-2);
+  color: var(--accent);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.quota--danger {
+  color: var(--danger);
+  border-color: rgba(229, 83, 75, 0.45);
+}
+
 .field {
   display: flex;
   flex-direction: column;

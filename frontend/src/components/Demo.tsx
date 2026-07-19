@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-import { anonymize, fetchConfigs } from "../lib/api";
-import type { AnonymizeResult, DetectorConfig, Entity } from "../lib/types";
+import { anonymize, fetchConfigs, fetchGatewayStatus } from "../lib/api";
+import type { AnonymizeResult, DetectorConfig, Entity, GatewayQuota } from "../lib/types";
 
 const SAMPLE =
   "Maria Lopez is a data engineer at Contoso Ltd in Antwerp. " +
@@ -47,6 +47,20 @@ export function Demo({ admitted }: { admitted: boolean }) {
   const [result, setResult] = useState<AnonymizeResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [quota, setQuota] = useState<GatewayQuota | null>(null);
+  const [quotaLoading, setQuotaLoading] = useState(false);
+
+  async function refreshQuota() {
+    setQuotaLoading(true);
+    try {
+      const status = await fetchGatewayStatus("anonymizer");
+      setQuota(status.demo_quota);
+    } catch {
+      setQuota(null);
+    } finally {
+      setQuotaLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (!admitted) return;
@@ -57,6 +71,7 @@ export function Demo({ admitted }: { admitted: boolean }) {
         if (preferred) setConfig(preferred.key);
       })
       .catch((e: Error) => setError(e.message));
+    refreshQuota();
   }, [admitted]);
 
   async function run() {
@@ -64,8 +79,10 @@ export function Demo({ admitted }: { admitted: boolean }) {
     setError(null);
     try {
       setResult(await anonymize(text, config));
+      await refreshQuota();
     } catch (e) {
       setError((e as Error).message);
+      await refreshQuota();
     } finally {
       setBusy(false);
     }
@@ -111,10 +128,29 @@ export function Demo({ admitted }: { admitted: boolean }) {
         <button
           className="button"
           onClick={run}
-          disabled={!admitted || busy || !config || text.trim().length === 0}
+          disabled={
+            !admitted ||
+            busy ||
+            !config ||
+            text.trim().length === 0 ||
+            (quota?.remaining !== null && quota?.remaining !== undefined && quota.remaining <= 0)
+          }
         >
           {busy ? "Analyzing..." : "Anonymize"}
         </button>
+
+        <div
+          className={`quota ${quota?.banned ? "quota--danger" : ""}`}
+          title={quota?.location ? `${quota.location.city ?? ""} ${quota.location.postal_code ?? ""}`.trim() : undefined}
+        >
+          {quotaLoading
+            ? "..."
+            : quota
+              ? quota.remaining === null
+                ? "∞"
+                : `${quota.remaining} left`
+              : "—"}
+        </div>
       </div>
 
       {error && (
