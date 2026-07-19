@@ -16,10 +16,15 @@ export type GateState =
   | "offline"
   | "expired";
 
+// Access tier the gateway admitted us under, as reported in its "admitted" message.
+// Null until admitted (and in dev, where there is no gateway to ask).
+export type Tier = "admin" | "invited" | "anonymous";
+
 export type Gate = {
   state: GateState;
   position: number | null;
   sessionId: string | null;
+  tier: Tier | null;
 };
 
 type ServerMsg =
@@ -51,6 +56,7 @@ export function useGateway(): Gate {
   const [state, setState] = useState<GateState>(ENABLED ? "connecting" : "admitted");
   const [position, setPosition] = useState<number | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [tier, setTier] = useState<Tier | null>(null);
 
   const stateRef = useRef<GateState>(state);
   const wsRef = useRef<WebSocket | null>(null);
@@ -93,6 +99,7 @@ export function useGateway(): Gate {
         } else if (msg.type === "admitted") {
           setGate("admitted");
           setSessionId(msg.session_id);
+          setTier((msg.tier as Tier) ?? null);
           setPosition(null);
           stopHeartbeat();
           const interval = (msg.heartbeat_interval_seconds || 15) * 1000;
@@ -108,6 +115,7 @@ export function useGateway(): Gate {
         } else if (msg.type === "expired") {
           setGate("expired");
           setSessionId(null);
+          setTier(null);
           stopHeartbeat();
         }
       };
@@ -141,5 +149,5 @@ export function useGateway(): Gate {
     };
   }, []);
 
-  return { state, position, sessionId };
+  return { state, position, sessionId, tier };
 }

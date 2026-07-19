@@ -63,6 +63,46 @@ code {
   gap: 24px;
 }
 
+/* slim bar above the page: the way back to the portfolio, and this session's tier.
+   A flex item of .page, so spacing comes from that container's gap. */
+.sitenav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.sitenav__home {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+.sitenav__home:hover {
+  text-decoration: underline;
+}
+.sitenav__here {
+  color: var(--muted);
+}
+
+/* access tier badge, pinned to the right of the site nav */
+.tierbadge {
+  margin-left: auto;
+  padding: 2px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.tierbadge--admin {
+  color: var(--found);
+  border-color: var(--found);
+}
+.tierbadge--invited {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .hero {
   padding: 8px 0 4px;
 }

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
 import { Demo } from "./components/Demo";
+import { SiteNav } from "./components/SiteNav";
 import { setGatewaySession } from "./lib/api";
 import { Gate } from "./lib/Gate";
 import { useGateway } from "./lib/useGateway";
@@ -30,6 +31,8 @@ export default function App() {
 
   return (
     <div className="page">
+      <SiteNav tier={gate.tier} />
+
       <header className="hero">
         <p className="eyebrow">NLP / privacy engineering</p>
         <h1>Anonymizer</h1>
