@@ -26,8 +26,11 @@ data/
 # Saved run outputs (may contain the provided text; kept local)
 output/
 
-# Notebooks: executed outputs contain the provided text; kept local
+# Notebooks: executed outputs contain the provided text; kept local.
+# Catch-all so a notebook created anywhere is ignored by default. If a data-free
+# demo notebook is ever meant to ship, add it deliberately with `git add -f`.
 notebooks/
+*.ipynb
 
 # Tooling
 .pytest_cache/
