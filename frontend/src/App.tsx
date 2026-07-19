@@ -1,5 +1,3 @@
-import { useEffect } from "react";
-
 import { Demo } from "./components/Demo";
 import { SiteNav } from "./components/SiteNav";
 import { setGatewaySession } from "./lib/api";
@@ -24,10 +22,9 @@ const LABELS = [
 export default function App() {
   const gate = useGateway();
 
-  // Every /api call carries the admission id the gateway handed us.
-  useEffect(() => {
-    setGatewaySession(gate.sessionId);
-  }, [gate.sessionId]);
+  // Register the session before children effects run so the first API request
+  // already carries the gateway admission id.
+  setGatewaySession(gate.sessionId);
 
   return (
     <div className="page">
