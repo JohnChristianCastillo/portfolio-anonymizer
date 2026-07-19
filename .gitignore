@@ -26,6 +26,9 @@ data/
 # Saved run outputs (may contain the provided text; kept local)
 output/
 
+# Notebooks: executed outputs contain the provided text; kept local
+notebooks/
+
 # Tooling
 .pytest_cache/
 .mypy_cache/
