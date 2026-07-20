@@ -29,7 +29,11 @@ PATTERNS = [
         re.compile(r"(?:https?://|www\.)[\w-]+(?:\.[\w-]+)+(?:/[\w\-./%?=&#]*[\w/])?"),
     ),
     ("IBAN", re.compile(r"\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]{2,4}){2,7}\b")),
-    # Belgian rijksregisternummer (82.05.30-025.56) or a US-style SSN.
+    # National identifier numbers. Every country formats these differently, so this
+    # covers two shapes rather than pretending to be general: the Belgian
+    # rijksregisternummer (82.05.30-025.56) and the US pattern (123-45-6789).
+    # Supporting more countries means adding a pattern per format, which is a known
+    # limitation for work spanning several European jurisdictions.
     ("SSN", re.compile(r"\b\d{2}\.\d{2}\.\d{2}-\d{3}\.\d{2}\b|\b\d{3}-\d{2}-\d{4}\b")),
     # A run of digits and separators long enough to be a phone number, not a year.
     ("PHONE_NUMBER", re.compile(r"\+?\d[\d\s().-]{7,}\d")),

@@ -3,13 +3,21 @@ Sofie Vermeulen works as a data engineer at Contoso Belgium in Ghent.;<PERSON> w
 You can reach Maarten De Vos at maarten.devos@contoso.example or on +32 471 22 33 44.;You can reach <PERSON> at <EMAIL_ADDRESS> or on <PHONE_NUMBER>.
 Transfer EUR 2450.00 to BE68 5390 0754 7034 before 15 March 2026.;Transfer <AMOUNT> to <IBAN> before <DATE_TIME>.
 Her national number is 85.07.12-034.51 and the file was opened on 4 April 2025.;Her national number is <SSN> and the file was opened on <DATE_TIME>.
-Elena Rossi graduated from Ghent University and now teaches at KU Leuven.;<PERSON> graduated from <UNIVERSITY> and now teaches at <UNIVERSITY>.
+Elena Rossi graduated from Northgate University and now teaches at Westmoor College.;<PERSON> graduated from <UNIVERSITY> and now teaches at <UNIVERSITY>.
 Full details are published at https://www.contoso.example/privacy-policy.;Full details are published at <URL>.
 Thomas Mercier and Anke Peeters joined Northwind Systems in September 2024.;<PERSON> and <PERSON> joined <ORG> in <DATE_TIME>.
-Amara Okafor, a postdoctoral researcher at the University of Antwerp, can be reached at a.okafor@example.org.;<PERSON>, a <JOB> at <UNIVERSITY>, can be reached at <EMAIL_ADDRESS>.
+Amara Okafor, a postdoctoral researcher at Eastvale University, can be reached at a.okafor@example.org.;<PERSON>, a <JOB> at <UNIVERSITY>, can be reached at <EMAIL_ADDRESS>.
 The contract is worth 1.2 million euro, up from 850000 euro in 2023.;The contract is worth <AMOUNT>, up from <AMOUNT> in <DATE_TIME>.
 Call 02 555 44 33 during office hours or +32 476 11 22 33 in an emergency.;Call <PHONE_NUMBER> during office hours or <PHONE_NUMBER> in an emergency.
 Acme Robotics opened an office in Brussels and a depot in Liege.;<ORG> opened an office in <LOCATION> and a depot in <LOCATION>.
 Ilse Janssens, a paediatric nurse at Sint-Jan Hospital, starts her shift at seven.;<PERSON>, a <JOB> at <ORG>, starts her shift at seven.
+Lars Andersen transferred GBP 12,500 to NL91 ABNA 0417 1643 00 on 3 June 2025.;<PERSON> transferred <AMOUNT> to <IBAN> on <DATE_TIME>.
+Contact Beatriz Alvarez in Madrid on +34 612 345 678 or beatriz.alvarez@example.es.;Contact <PERSON> in <LOCATION> on <PHONE_NUMBER> or <EMAIL_ADDRESS>.
+Klaus Richter, a systems architect at Rhein Systems GmbH, studied at Aldergrove University.;<PERSON>, a <JOB> at <ORG>, studied at <UNIVERSITY>.
+The invoice totals $18,750.00 and was settled from DE89 3704 0044 0532 0130 00.;The invoice totals <AMOUNT> and was settled from <IBAN>.
+Marta Nowak joined the Warsaw office as a compliance officer on 12 January 2026.;<PERSON> joined the <LOCATION> office as a <JOB> on <DATE_TIME>.
+Reach the helpdesk on +44 20 7946 0958 or at support@northgate.example.;Reach the helpdesk on <PHONE_NUMBER> or at <EMAIL_ADDRESS>.
+Payment of 3.5 million euro was approved, alongside a 250000 pound contingency.;Payment of <AMOUNT> was approved, alongside a <AMOUNT> contingency.
+Employee 123-45-6789 was registered against FR14 2004 1010 0505 0001 3M02 606 in 2024.;Employee <SSN> was registered against <IBAN> in <DATE_TIME>.
 The report was uploaded to the shared drive for review before the meeting.;The report was uploaded to the shared drive for review before the meeting.
 The depot holds 2019 registered bicycles and 15000 square metres of floor space.;The depot holds 2019 registered bicycles and 15000 square metres of floor space.
