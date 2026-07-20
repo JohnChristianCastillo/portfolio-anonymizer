@@ -98,23 +98,33 @@ Without it, those configurations are simply reported as skipped.
 
 Full write-up with charts: **[report/REPORT.md](report/REPORT.md)**
 
-The required two-model comparison:
+### The models, compared on their own
 
-![Overall metrics by configuration](report/core_overall_metrics.png)
+This is the comparison the exercise asked for. Each model gets the same input with
+nothing added, so the difference between them is the models and only the models.
 
-Every configuration measured, including the two added afterwards:
+| Model | Precision | Recall | F1 |
+|---|---|---|---|
+| spaCy `en_core_web_sm` | 0.91 | 0.76 | **0.83** |
+| HF `bert-base-NER` (CoNLL) | 0.94 | 0.67 | 0.78 |
+
+The smaller model wins, but **not because it is the better model**. The transformer
+is stronger on every label they both cover; it loses because CoNLL defines only four
+entity types, so it is blind to dates and amounts entirely. Run on a matching label
+scheme it comes out ahead (see the report).
+
+The rule layer is reported **separately, and never inside a model comparison**: it can
+only produce 5 of the 12 labels, so adding it to both models measures a system rather
+than a model.
 
 ![F1 per entity label, all configurations](report/all_per_label_f1.png)
 
-Headlines, with the reasoning in the report:
+Other headlines, with the reasoning in the report:
 
-- Adding the rule layer to either model raises recall with no loss of precision,
-  because rules and models cover disjoint labels.
-- In the required comparison the smaller spaCy model wins, but **not because it is
-  the better model**: the transformer it was measured against is blind to a third of
-  the labels. Rerun on a matching label scheme, the transformer is stronger.
+- Rules and models cover disjoint labels, so combining them raises recall with no
+  loss of precision. That is why the delivered tool is a hybrid.
 - JOB and UNIVERSITY are unreachable for every conventional model, since no standard
-  scheme contains those classes. Only the zero-shot configuration detects them.
+  scheme contains those classes. Only the zero-shot model detects them.
 
 ## Setup
 

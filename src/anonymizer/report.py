@@ -127,8 +127,6 @@ def build(
     all_charts: list[str],
     skipped: list,
 ) -> str:
-    best_core, _ = best_by(core, 2)
-
     details = "\n\n".join(
         f"### {name}\n\n{detail_table(report)}"
         for name, report in {**core, **extended}.items()
@@ -139,6 +137,12 @@ def build(
         combined = {**core, **extended}
         best_f1_name, best_f1 = best_by(combined, 2)
         best_recall_name, best_recall = best_by(combined, 1)
+        # Models on their own, across the required and the added ones alike.
+        all_models_only = {
+            c.label: combined[c.label]
+            for c in configs.models_only(configs.CONFIGURATIONS)
+            if c.label in combined
+        }
 
         extended_section = f"""
 ## Beyond the required comparison
@@ -176,7 +180,16 @@ That breaks the wall: both labels are detected for the first time. It also produ
 the highest recall of any configuration measured, which matters here more than F1,
 since a miss is a leak and a false positive only over-redacts.
 
-### All configurations
+### Every model, measured alone
+
+The same apples-to-apples view as the required comparison, now with all four models
+and no rule layer involved:
+
+{overall_table(all_models_only)}
+
+{per_label_table(all_models_only)}
+
+### Every configuration
 
 ![All configurations]({all_charts[0]})
 
@@ -205,51 +218,78 @@ since a miss is a leak and a false positive only over-redacts.
 > `uv run --with gliner anonymizer-report`.
 """
 
+    core_models = {
+        c.label: core[c.label] for c in configs.models_only(configs.CORE_CONFIGURATIONS)
+    }
+    core_hybrid = {
+        c.label: core[c.label] for c in configs.with_rules(configs.CORE_CONFIGURATIONS)
+    }
+    best_model, _ = best_by(core_models, 2)
+
     return f"""# Benchmark report
 
 Regenerate with `uv run anonymizer-report`. Evaluated on a labelled dataset of
 {row_count} texts against the 12 target entity labels.
 {skipped_note}
-## The required comparison
+## The required comparison: two models, measured alone
 
-Two pre-trained NER models measured against each other, and each one paired with the
-rule layer. This is the result the exercise asked for; nothing below changes it.
+{configuration_table(configs.models_only(configs.CORE_CONFIGURATIONS))}
 
-{configuration_table(configs.CORE_CONFIGURATIONS)}
+Both models are given the same input and nothing else is added, so the difference
+between them is the models and only the models.
 
-Each detector exposes the same interface (`load()` and `detect(model, text)`), so a
-configuration is just a list of detectors in priority order. Where two detectors
-claim overlapping text, the earlier one wins, then the longer span.
+{overall_table(core_models)}
 
-### Overall results
+{per_label_table(core_models)}
+
+Highest F1: **{best_model}**. Recall matters most here, because a missed identifier
+is a leak, while a false positive only over-redacts.
+
+**What it shows.** The two have complementary blind spots. The transformer is
+stronger on the entity types both cover, reading context better: organisations and
+locations both improve. But it emits no dates and no money at all, because it is
+fine-tuned on CoNLL-2003, whose scheme has only four entity types. The smaller spaCy
+pipeline therefore wins overall, on coverage rather than on quality.
+
+## Why the rule layer is reported separately
+
+A rule layer for fixed-shape identifiers was added as an engineering step. It is
+**not** part of the model comparison above, and mixing the two would be misleading:
+
+- The rules can only ever produce **5 of the 12 labels** (email, URL, phone, IBAN,
+  national number). They contribute nothing to people, organisations, locations,
+  dates or amounts.
+- Adding the same rule layer to both models adds the same easy wins to both, which
+  raises both scores and narrows the visible gap between them.
+- In principle the rules could also mask a model's detections, since they take
+  priority when spans overlap. Measured on this dataset they never do: **zero** model
+  spans were suppressed for either model. So here the layer is purely additive, and
+  the ordering of the two models is unchanged. That is a measurement, not an
+  assumption.
+
+So the numbers below describe a **system**, not a model.
+
+{configuration_table(configs.with_rules(configs.CORE_CONFIGURATIONS))}
+
+{overall_table(core_hybrid)}
+
+**What it shows.** Rules and models solve disjoint problems. The rule layer scores
+highly on exactly the fixed-shape types that both models score zero on, while the
+models handle the open-class entities no regular expression can express. Adding
+rules lifts recall for both models with no loss of precision, which is why the
+delivered tool combines them even though the comparison above does not.
+
+### All four core configurations together
 
 ![Overall metrics by configuration]({core_charts[0]})
 
-Highest F1: **{best_core}**. Recall matters most here, because a missed identifier is
-a leak, while a false positive only over-redacts.
-
 ![Each metric compared across configurations]({core_charts[1]})
-
-{overall_table(core)}
-
-### Per-label coverage
 
 ![F1 per entity label]({core_charts[2]})
 
+{overall_table(core)}
+
 {per_label_table(core)}
-
-### What the required comparison shows
-
-- **The two models have complementary blind spots.** The transformer is stronger on
-  the entity types both cover, reading context better. The spaCy pipeline covers date
-  and money entities that the CoNLL-trained transformer has no labels for at all, so
-  it wins overall despite being the smaller model.
-- **Rules and models solve disjoint problems.** The regex layer scores highly on
-  exactly the fixed-shape types (email, phone, URL) that both models score zero on,
-  while the models handle open-class entities (people, organisations, locations) that
-  no regular expression can express. Adding rules to either model raises recall with
-  no loss of precision.
-- **Hybrid wins.** The strongest configuration combines a model with the rule layer.
 {extended_section}
 ## How the scoring works
 

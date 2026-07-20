@@ -3,30 +3,84 @@
 Regenerate with `uv run anonymizer-report`. Evaluated on a labelled dataset of
 10 texts against the 12 target entity labels.
 
-## The required comparison
-
-Two pre-trained NER models measured against each other, and each one paired with the
-rule layer. This is the result the exercise asked for; nothing below changes it.
+## The required comparison: two models, measured alone
 
 | Configuration | Detectors (priority order) |
 |---|---|
 | spaCy sm | en_core_web_sm |
 | HF bert | dslim/bert-base-NER |
+
+Both models are given the same input and nothing else is added, so the difference
+between them is the models and only the models.
+
+| Configuration | Precision | Recall | F1 | Exact rows |
+|---|---|---|---|---|
+| spaCy sm | 0.91 | 0.76 | 0.83 | 2/10 |
+| HF bert | 0.94 | 0.67 | 0.78 | 1/10 |
+
+| Label (F1) | spaCy sm | HF bert |
+|---|---|---|
+| PERSON | 1.00 | 1.00 |
+| ORG | 0.75 | 0.94 |
+| JOB | 0.00 | 0.00 |
+| EMAIL_ADDRESS | 0.00 | 0.00 |
+| LOCATION | 0.89 | 0.95 |
+| AMOUNT | 1.00 | 0.00 |
+| DATE_TIME | 0.88 | 0.00 |
+| UNIVERSITY | 0.00 | 0.00 |
+| PHONE_NUMBER | 0.00 | 0.00 |
+| URL | 0.00 | 0.00 |
+
+Highest F1: **spaCy sm**. Recall matters most here, because a missed identifier
+is a leak, while a false positive only over-redacts.
+
+**What it shows.** The two have complementary blind spots. The transformer is
+stronger on the entity types both cover, reading context better: organisations and
+locations both improve. But it emits no dates and no money at all, because it is
+fine-tuned on CoNLL-2003, whose scheme has only four entity types. The smaller spaCy
+pipeline therefore wins overall, on coverage rather than on quality.
+
+## Why the rule layer is reported separately
+
+A rule layer for fixed-shape identifiers was added as an engineering step. It is
+**not** part of the model comparison above, and mixing the two would be misleading:
+
+- The rules can only ever produce **5 of the 12 labels** (email, URL, phone, IBAN,
+  national number). They contribute nothing to people, organisations, locations,
+  dates or amounts.
+- Adding the same rule layer to both models adds the same easy wins to both, which
+  raises both scores and narrows the visible gap between them.
+- In principle the rules could also mask a model's detections, since they take
+  priority when spans overlap. Measured on this dataset they never do: **zero** model
+  spans were suppressed for either model. So here the layer is purely additive, and
+  the ordering of the two models is unchanged. That is a measurement, not an
+  assumption.
+
+So the numbers below describe a **system**, not a model.
+
+| Configuration | Detectors (priority order) |
+|---|---|
 | spaCy+regex | regex rules + en_core_web_sm |
 | HF+regex | regex rules + dslim/bert-base-NER |
 
-Each detector exposes the same interface (`load()` and `detect(model, text)`), so a
-configuration is just a list of detectors in priority order. Where two detectors
-claim overlapping text, the earlier one wins, then the longer span.
+| Configuration | Precision | Recall | F1 | Exact rows |
+|---|---|---|---|---|
+| spaCy+regex | 0.91 | 0.82 | 0.87 | 3/10 |
+| HF+regex | 0.95 | 0.73 | 0.82 | 1/10 |
 
-### Overall results
+**What it shows.** Rules and models solve disjoint problems. The rule layer scores
+highly on exactly the fixed-shape types that both models score zero on, while the
+models handle the open-class entities no regular expression can express. Adding
+rules lifts recall for both models with no loss of precision, which is why the
+delivered tool combines them even though the comparison above does not.
+
+### All four core configurations together
 
 ![Overall metrics by configuration](core_overall_metrics.png)
 
-Highest F1: **spaCy+regex**. Recall matters most here, because a missed identifier is
-a leak, while a false positive only over-redacts.
-
 ![Each metric compared across configurations](core_metric_comparison.png)
+
+![F1 per entity label](core_per_label_f1.png)
 
 | Configuration | Precision | Recall | F1 | Exact rows |
 |---|---|---|---|---|
@@ -34,10 +88,6 @@ a leak, while a false positive only over-redacts.
 | HF bert | 0.94 | 0.67 | 0.78 | 1/10 |
 | spaCy+regex | 0.91 | 0.82 | 0.87 | 3/10 |
 | HF+regex | 0.95 | 0.73 | 0.82 | 1/10 |
-
-### Per-label coverage
-
-![F1 per entity label](core_per_label_f1.png)
 
 | Label (F1) | spaCy sm | HF bert | spaCy+regex | HF+regex |
 |---|---|---|---|---|
@@ -51,19 +101,6 @@ a leak, while a false positive only over-redacts.
 | UNIVERSITY | 0.00 | 0.00 | 0.00 | 0.00 |
 | PHONE_NUMBER | 0.00 | 0.00 | 1.00 | 1.00 |
 | URL | 0.00 | 0.00 | 1.00 | 1.00 |
-
-### What the required comparison shows
-
-- **The two models have complementary blind spots.** The transformer is stronger on
-  the entity types both cover, reading context better. The spaCy pipeline covers date
-  and money entities that the CoNLL-trained transformer has no labels for at all, so
-  it wins overall despite being the smaller model.
-- **Rules and models solve disjoint problems.** The regex layer scores highly on
-  exactly the fixed-shape types (email, phone, URL) that both models score zero on,
-  while the models handle open-class entities (people, organisations, locations) that
-  no regular expression can express. Adding rules to either model raises recall with
-  no loss of precision.
-- **Hybrid wins.** The strongest configuration combines a model with the rule layer.
 
 ## Beyond the required comparison
 
@@ -105,7 +142,32 @@ That breaks the wall: both labels are detected for the first time. It also produ
 the highest recall of any configuration measured, which matters here more than F1,
 since a miss is a leak and a false positive only over-redacts.
 
-### All configurations
+### Every model, measured alone
+
+The same apples-to-apples view as the required comparison, now with all four models
+and no rule layer involved:
+
+| Configuration | Precision | Recall | F1 | Exact rows |
+|---|---|---|---|---|
+| spaCy sm | 0.91 | 0.76 | 0.83 | 2/10 |
+| HF bert | 0.94 | 0.67 | 0.78 | 1/10 |
+| HF onto | 0.98 | 0.82 | 0.89 | 0/10 |
+| GLiNER | 0.88 | 0.96 | 0.92 | 2/10 |
+
+| Label (F1) | spaCy sm | HF bert | HF onto | GLiNER |
+|---|---|---|---|---|
+| PERSON | 1.00 | 1.00 | 1.00 | 1.00 |
+| ORG | 0.75 | 0.94 | 0.94 | 0.84 |
+| JOB | 0.00 | 0.00 | 0.00 | 0.67 |
+| EMAIL_ADDRESS | 0.00 | 0.00 | 0.00 | 1.00 |
+| LOCATION | 0.89 | 0.95 | 0.95 | 0.95 |
+| AMOUNT | 1.00 | 0.00 | 1.00 | 1.00 |
+| DATE_TIME | 0.88 | 0.00 | 0.93 | 1.00 |
+| UNIVERSITY | 0.00 | 0.00 | 0.00 | 1.00 |
+| PHONE_NUMBER | 0.00 | 0.00 | 0.00 | 0.67 |
+| URL | 0.00 | 0.00 | 0.00 | 0.00 |
+
+### Every configuration
 
 ![All configurations](all_overall_metrics.png)
 

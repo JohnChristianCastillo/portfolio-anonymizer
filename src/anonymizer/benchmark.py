@@ -46,14 +46,24 @@ def evaluate(detectors, rows) -> list[tuple[str, str]]:
 def main() -> None:
     rows = load_rows()
 
-    print("###  Required comparison: two pre-trained NER models  ###\n")
     core = {}
     for configuration in configs.CORE_CONFIGURATIONS:
         print(f"=== {configuration.label} ===")
         core[configuration.label] = scoring.score(evaluate(configuration.detectors, rows))
         print()
-    print("=== Comparison ===")
-    scoring.compare(core)
+
+    # The models on their own. This is the comparison the exercise asked for: the
+    # rule layer covers only five of the twelve labels, so including it would measure
+    # a system rather than a model.
+    print("###  Required comparison: the two models, measured alone  ###")
+    scoring.compare(
+        {c.label: core[c.label] for c in configs.models_only(configs.CORE_CONFIGURATIONS)}
+    )
+
+    print("\n###  Same models, with the rule layer added (a system, not a model)  ###")
+    scoring.compare(
+        {c.label: core[c.label] for c in configs.with_rules(configs.CORE_CONFIGURATIONS)}
+    )
 
     extended = configs.runnable(configs.EXTENDED_CONFIGURATIONS)
     skipped = [c for c in configs.EXTENDED_CONFIGURATIONS if not c.available()]

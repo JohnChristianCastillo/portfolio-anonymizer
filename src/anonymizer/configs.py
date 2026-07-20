@@ -39,6 +39,15 @@ class Configuration:
             return gliner_model.is_available()
         return True
 
+    @property
+    def uses_rules(self) -> bool:
+        """Whether the rule layer is part of this configuration.
+
+        Kept separable because the rules only cover five of the twelve labels, so a
+        configuration that includes them measures a system rather than a model.
+        """
+        return regex_rules in self.detectors
+
 
 CORE_CONFIGURATIONS = [
     Configuration("spacy", "spaCy sm", [spacy_model]),
@@ -81,3 +90,18 @@ def by_key(key: str) -> Configuration | None:
 def runnable(configurations: list[Configuration]) -> list[Configuration]:
     """Those configurations whose optional dependencies are installed."""
     return [c for c in configurations if c.available()]
+
+
+def models_only(configurations: list[Configuration]) -> list[Configuration]:
+    """Configurations that are a model on its own, with no rule layer.
+
+    This is what a model-against-model comparison must be built from: the rules
+    cover only five of the twelve labels, so including them measures the system
+    rather than the model, and inflates every score with the same easy wins.
+    """
+    return [c for c in configurations if not c.uses_rules]
+
+
+def with_rules(configurations: list[Configuration]) -> list[Configuration]:
+    """Configurations that pair a model with the rule layer."""
+    return [c for c in configurations if c.uses_rules]
