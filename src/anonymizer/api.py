@@ -42,6 +42,13 @@ _MAX_CONCURRENT = int(os.environ.get("ANONYMIZER_MAX_CONCURRENCY", "2"))
 _ACQUIRE_TIMEOUT_SECONDS = 15
 _inference_slots = threading.BoundedSemaphore(_MAX_CONCURRENT)
 
+
+# Which configurations this instance serves, comma separated (see GET /configs).
+# Every model stays resident once loaded, and all of them together need roughly
+# 1.7 GB, which is more than a small container is usually given. Empty means serve
+# everything, which is how a local run behaves.
+_REQUESTED_CONFIGS = os.environ.get("ANONYMIZER_CONFIGS", "").strip()
+
 # Session tiers allowed to call the model, comma separated (admin, invited,
 # anonymous). Empty means open to everyone. The gateway verifies the tier and sends
 # it as X-Session-Tier, stripping any value supplied by the client, so this cannot
@@ -76,11 +83,27 @@ def _text_limit_for(session_tier: str | None) -> int | None:
     return LIMITED_MAX_TEXT_CHARS
 
 
+def _enabled_configurations() -> list[configs.Configuration]:
+    """The configurations this instance serves.
+
+    The default is always included, so the service can never start up unable to
+    answer its own default, and an unrecognised list falls back to serving
+    everything rather than leaving the app with nothing to offer.
+    """
+    available = configs.runnable(configs.CONFIGURATIONS)
+    if not _REQUESTED_CONFIGS:
+        return available
+
+    wanted = {key.strip() for key in _REQUESTED_CONFIGS.split(",") if key.strip()}
+    wanted.add(configs.DEFAULT_KEY)
+    return [c for c in available if c.key in wanted] or available
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Only configurations whose optional dependencies are installed, so a missing
-    # package leaves that configuration unavailable rather than failing startup.
-    for configuration in configs.runnable(configs.CONFIGURATIONS):
+    # Only the configurations this instance serves, so a memory-constrained
+    # deployment does not load models it will never be asked for.
+    for configuration in _enabled_configurations():
         for detector in configuration.detectors:
             if detector not in _models:
                 _models[detector] = detector.load()
@@ -167,7 +190,7 @@ def list_configs() -> list[dict]:
             "core": configuration.core,
         }
         # Only what this deployment can actually run.
-        for configuration in configs.runnable(configs.CONFIGURATIONS)
+        for configuration in _enabled_configurations()
     ]
 
 
@@ -203,7 +226,7 @@ def anonymize(
             ),
         )
     if configuration is None:
-        known = ", ".join(c.key for c in configs.runnable(configs.CONFIGURATIONS))
+        known = ", ".join(c.key for c in _enabled_configurations())
         raise HTTPException(
             status_code=422,
             detail=f"Unknown config '{request.config}'. Available: {known}",

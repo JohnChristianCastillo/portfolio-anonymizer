@@ -2,11 +2,6 @@
 
     uv run anonymizer-report
 
-Include the zero-shot configurations, which need a package deliberately kept out of
-the lock file:
-
-    uv run --with gliner anonymizer-report
-
 Writes aggregate values only: label names, counts and metrics, never the evaluated
 text.
 """

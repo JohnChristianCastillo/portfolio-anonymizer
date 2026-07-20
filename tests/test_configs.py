@@ -37,10 +37,16 @@ def test_no_extended_configuration_is_marked_core():
     assert not any(c.core for c in configs.EXTENDED_CONFIGURATIONS)
 
 
-def test_the_default_configuration_comes_from_the_required_set():
+def test_the_default_configuration_covers_every_required_label():
+    """The app is asked to handle all twelve entity types, so its default must.
+
+    This deliberately does not require the default to come from the required
+    comparison: every configuration in that comparison scores zero on JOB and
+    UNIVERSITY, because no standard NER scheme contains those classes.
+    """
     default = configs.by_key(configs.DEFAULT_KEY)
     assert default is not None
-    assert default.core
+    assert configs.DEFAULT_KEY == configs.FULL_COVERAGE_KEY
 
 
 def test_keys_are_unique():

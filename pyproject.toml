@@ -8,6 +8,7 @@ dependencies = [
     "click>=8.4.2",
     "en-core-web-sm",
     "fastapi>=0.139.2",
+    "gliner",
     "phonenumbers>=9.0.34",
     "python-stdnum>=2.2",
     "spacy>=3.8.14",

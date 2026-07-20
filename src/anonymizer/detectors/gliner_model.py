@@ -5,15 +5,11 @@ JOB and UNIVERSITY score zero for every other configuration here: no standard sc
 contains those classes. A zero-shot model is given the label names at inference time
 instead, so it can be asked for them directly.
 
-Optional on purpose. The `gliner` package pins an older `transformers` than the rest
-of the project, and installing it would change the environment the required
-two-model comparison was measured in. It is therefore never added to the lock file;
-run it in a throwaway overlay instead:
-
-    uv run --with gliner anonymizer-benchmark
-
-Without the package installed, `is_available()` is False and the benchmark simply
-reports this configuration as skipped.
+This was once an optional dependency: `gliner` pinned an older `transformers` than
+the rest of the project, so installing it would have changed the environment the
+required two-model comparison was measured in. Later versions lifted that pin, so it
+is now an ordinary dependency. `is_available()` is kept so the configurations still
+degrade to being skipped rather than failing if the package is ever absent.
 """
 
 from ..spans import Span
@@ -56,9 +52,8 @@ def load(model_name: str = MODEL_NAME):
         from gliner import GLiNER
     except ImportError as exc:
         raise ImportError(
-            "The gliner package is not installed. It is deliberately kept out of the "
-            "lock file because it pins an older transformers than the rest of the "
-            "project. Run the benchmark with: uv run --with gliner anonymizer-benchmark"
+            "The gliner package is not installed. It is a normal dependency of this "
+            "project, so `uv sync` should provide it."
         ) from exc
     return GLiNER.from_pretrained(model_name)
 

@@ -8,11 +8,6 @@ The required two-model comparison is reported first and on its own. Anything add
 afterwards is reported separately, so the two are never conflated.
 
     uv run anonymizer-benchmark
-
-Include the zero-shot configurations, which need a package that is deliberately not
-in the lock file:
-
-    uv run --with gliner anonymizer-benchmark
 """
 
 import argparse
@@ -103,7 +98,7 @@ def main() -> None:
     if skipped:
         names = ", ".join(f"{c.label} (needs {c.requires})" for c in skipped)
         print(f"\nSkipped, optional dependency not installed: {names}")
-        print("Run with: uv run --with gliner anonymizer-benchmark")
+        print("Install the missing package and run again.")
 
 
 if __name__ == "__main__":

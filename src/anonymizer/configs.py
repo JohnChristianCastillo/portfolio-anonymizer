@@ -63,13 +63,12 @@ EXTENDED_CONFIGURATIONS = [
     Configuration("onto", "HF onto", [hf_ontonotes], core=False),
     Configuration("onto+regex", "HF onto+regex", [regex_rules, hf_ontonotes], core=False),
     # Zero-shot, and the only configuration that can reach JOB and UNIVERSITY.
-    Configuration("gliner", "GLiNER", [gliner_model], core=False, requires="gliner"),
+    Configuration("gliner", "GLiNER", [gliner_model], core=False),
     Configuration(
         "gliner+regex",
         "GLiNER+regex",
         [regex_rules, gliner_model],
         core=False,
-        requires="gliner",
     ),
     # Stacking all three, to test whether more detectors is better. It is not: the
     # extra model wins overlaps it should not, and organisations get worse. Kept
@@ -80,7 +79,6 @@ EXTENDED_CONFIGURATIONS = [
         "Stacked x3",
         [regex_rules, hf_ontonotes, gliner_model],
         core=False,
-        requires="gliner",
     ),
 ]
 
@@ -91,8 +89,12 @@ FULL_COVERAGE_KEY = "gliner+regex"
 
 CONFIGURATIONS = CORE_CONFIGURATIONS + EXTENDED_CONFIGURATIONS
 
-# Best F1 in the required comparison, so it is the sensible default for the API.
-DEFAULT_KEY = "spacy+regex"
+# What the app answers with unless a caller asks for something else. This is the
+# full-coverage configuration rather than the best of the required comparison: the
+# brief asks the app to handle all twelve entity types, and every configuration in
+# the required comparison scores zero on JOB and UNIVERSITY. It also happens to have
+# the best F1 and the best recall of anything measured.
+DEFAULT_KEY = FULL_COVERAGE_KEY
 
 
 def by_key(key: str) -> Configuration | None:

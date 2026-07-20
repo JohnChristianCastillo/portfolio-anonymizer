@@ -33,10 +33,13 @@ RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --no-ins
 COPY src/anonymizer ./src/anonymizer
 ENV PYTHONPATH=/app/src
 
-# Bake the transformer weights into the image. Without this the container would
-# download ~400 MB from the Hugging Face hub on first request, so a cold start (or
-# an offline host) would fail rather than just being slow.
-RUN /app/.venv/bin/python -c "from anonymizer.detectors import hf_model; hf_model.load()"
+# Bake the model weights into the image. Without this the container would download
+# them from the Hugging Face hub on first request, so a cold start (or an offline
+# host) would fail rather than just being slow. GLiNER is included because it is the
+# default: it is the only configuration that reaches all twelve entity types.
+RUN /app/.venv/bin/python -c "\
+from anonymizer.detectors import gliner_model, hf_model, hf_ontonotes, spacy_model; \
+spacy_model.load(); hf_model.load(); hf_ontonotes.load(); gliner_model.load()"
 
 COPY --from=frontend /fe/dist ./webroot
 

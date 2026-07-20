@@ -83,16 +83,11 @@ confused with the required comparison or change its result:
 | `hf_ontonotes` | A transformer trained on OntoNotes | Tests whether the CoNLL model lost on architecture or merely on label coverage |
 | `gliner_model` | Zero-shot NER, given label names at inference time | The only way to reach JOB and UNIVERSITY, which no standard scheme contains |
 
-`gliner` is **not in the lock file**: it pins an older `transformers` than the rest of
-the project, so installing it would change the environment the required comparison
-was measured in. Run those configurations in a throwaway overlay instead:
-
-```bash
-uv run --with gliner anonymizer-benchmark
-uv run --with gliner anonymizer-report
-```
-
-Without it, those configurations are simply reported as skipped.
+`gliner` was originally kept out of the lock file, because it pinned an older
+`transformers` than the rest of the project and installing it would have changed the
+environment the required comparison was measured in. Later versions removed that
+conflict, so it is now an ordinary dependency and every configuration runs from a
+plain `uv sync`. The required comparison was re-measured afterwards and is unchanged.
 
 ## Results
 
