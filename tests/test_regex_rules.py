@@ -86,5 +86,53 @@ def test_detected_spans_never_overlap():
         assert first_end <= second_start
 
 
+def test_a_machine_timestamp_is_left_for_the_models():
+    # Regression: a hand-written phone pattern matched "2022-12-27 08" and cut the
+    # timestamp in half, so the models never got the chance to label it DATE_TIME.
+    # Validation is what fixes this: that string is a valid number in no region.
+    assert found("written on 2022-12-27 08:26:49.21 exactly") == {}
+
+
+def test_a_phone_number_written_without_a_country_code():
+    # Only reachable because the number is parsed against the expected regions.
+    assert found("call 015 29 58 58 today") == {"PHONE_NUMBER": ["015 29 58 58"]}
+
+
+def test_a_foreign_iban_is_not_split_into_a_phone_number():
+    # Regression: "NL91 ABNA 0417 1643 00" contains "0417 1643 00", which is a
+    # plausible number on its own, so IBANs must be claimed before telephones.
+    assert found("pay to NL91 ABNA 0417 1643 00 please") == {
+        "IBAN": ["NL91 ABNA 0417 1643 00"]
+    }
+
+
+def test_a_postal_code_before_a_town_is_a_location():
+    # The models consistently return the town but not the code in front of it.
+    assert found("at Voorbeeldstraat 12, 3500 Hasselt today") == {"LOCATION": ["3500"]}
+
+
+def test_a_bare_four_digit_number_is_not_a_postal_code():
+    # The rule requires a following capitalised word, or every year would match.
+    assert found("the depot holds 2019 registered bicycles") == {}
+
+
+def test_check_digits_are_reported_but_never_used_to_reject():
+    # A mistyped account number is still an account number, so detection stands
+    # whatever the check digits say, and validity is only reported alongside it.
+    text = "account NL91 ABNA 0417 1643 09 please"
+    assert found(text) == {"IBAN": ["NL91 ABNA 0417 1643 09"]}
+    assert regex_rules.is_valid_identifier("IBAN", "NL91 ABNA 0417 1643 09") is False
+    assert regex_rules.is_valid_identifier("IBAN", "NL91 ABNA 0417 1643 00") is True
+
+
+def test_validity_is_stricter_than_detection_needs_to_be():
+    # "BE68 5390 0754 7034" is the example IBAN found in most documentation. It
+    # passes the international mod-97 check but fails Belgium's own account-number
+    # rule, so a validity gate would have discarded a textbook account number.
+    # Detection has to stand on its own for exactly this reason.
+    assert found("account BE68 5390 0754 7034") == {"IBAN": ["BE68 5390 0754 7034"]}
+    assert regex_rules.is_valid_identifier("IBAN", "BE68 5390 0754 7034") is False
+
+
 def test_load_returns_nothing_to_load():
     assert regex_rules.load() is None

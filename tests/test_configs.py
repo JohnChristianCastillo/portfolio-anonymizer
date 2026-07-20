@@ -6,6 +6,7 @@ between the required set and the rest is asserted here rather than left to care.
 """
 
 from anonymizer import configs
+from anonymizer.detectors import regex_rules
 
 
 def test_the_required_comparison_is_exactly_these_four():
@@ -21,7 +22,9 @@ def test_the_required_comparison_uses_two_distinct_models():
     models = set()
     for configuration in configs.CORE_CONFIGURATIONS:
         for detector in configuration.detectors:
-            if detector.MODEL_NAME != "regex rules":
+            # Compare the module, not its name, so renaming the rule layer cannot
+            # silently let it count as a third model.
+            if detector is not regex_rules:
                 models.add(detector.MODEL_NAME)
     assert len(models) == 2
 
