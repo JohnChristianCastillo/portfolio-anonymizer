@@ -33,13 +33,19 @@ RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --no-ins
 COPY src/anonymizer ./src/anonymizer
 ENV PYTHONPATH=/app/src
 
-# Bake the model weights into the image. Without this the container would download
-# them from the Hugging Face hub on first request, so a cold start (or an offline
-# host) would fail rather than just being slow. GLiNER is included because it is the
-# default: it is the only configuration that reaches all twelve entity types.
-RUN /app/.venv/bin/python -c "\
-from anonymizer.detectors import gliner_model, hf_model, hf_ontonotes, spacy_model; \
-spacy_model.load(); hf_model.load(); hf_ontonotes.load(); gliner_model.load()"
+# Model weights are NOT baked into the image. They were, and it was the wrong call:
+# the layer sits after `uv sync`, so any dependency change re-downloaded roughly two
+# gigabytes, and unauthenticated Hugging Face requests are rate limited, which turned
+# a rebuild into an hours-long stall.
+#
+# Instead HF_HOME points at a directory backed by a named volume (see the compose
+# file), so the weights are fetched once on first start and survive every later
+# rebuild. Populate it before starting the service with:
+#
+#     docker compose run --rm anonymizer /app/.venv/bin/python -m anonymizer.warm
+#
+# spaCy is the exception: it is installed as a pinned wheel from the lock file rather
+# than downloaded at runtime, so it is already inside the image.
 
 COPY --from=frontend /fe/dist ./webroot
 
