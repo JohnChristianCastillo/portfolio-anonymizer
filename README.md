@@ -69,7 +69,7 @@ rule layer, are the **required comparison**:
 |---|---|---|
 | `spacy_model` | spaCy `en_core_web_sm` | PERSON, ORG, LOCATION, DATE_TIME, AMOUNT |
 | `hf_model` | HuggingFace `dslim/bert-base-NER` (BERT, CoNLL) | PERSON, ORG, LOCATION |
-| `regex_rules` | Rule patterns | EMAIL_ADDRESS, URL, PHONE_NUMBER, IBAN, SSN |
+| `regex_rules` | Rules, plus `phonenumbers` and `python-stdnum` | EMAIL_ADDRESS, URL, PHONE_NUMBER, IBAN, SSN, postal codes within LOCATION |
 
 Rules handle entities with a fixed shape; models handle open-class entities whose
 identity depends on context. The two cover disjoint labels, which is why the
@@ -114,7 +114,7 @@ entity types, so it is blind to dates and amounts entirely. Run on a matching la
 scheme it comes out ahead (see the report).
 
 The rule layer is reported **separately, and never inside a model comparison**: it can
-only produce 5 of the 12 labels, so adding it to both models measures a system rather
+only produce 6 of the 12 labels, so adding it to both models measures a system rather
 than a model.
 
 ![F1 per entity label, all configurations](report/all_per_label_f1.png)
@@ -325,7 +325,21 @@ report/               generated benchmark report and charts
 
 ## Limitations
 
-- The evaluation set is small, so per-label scores move a lot per entity.
-- JOB and UNIVERSITY have no class in standard NER schemes and no fixed shape for
-  a rule, so they need a gazetteer, hand-written patterns, or a zero-shot model.
-- Phone and IBAN patterns are pragmatic heuristics, not full format specifications.
+- Both evaluation sets are small (10 provided texts, 22 written from scratch), so
+  per-label scores move a lot per entity.
+- Scores fall by roughly a third on the second set, whose entities are all invented.
+  The first set's entities are well known enough to be in the models' training data,
+  so any figure taken from it alone is optimistic.
+- JOB and UNIVERSITY have no class in standard NER schemes and no fixed shape for a
+  rule. Only the zero-shot configuration produces them, and that model pins an older
+  `transformers` than the rest of the project, so it stays out of the lock file and
+  is run explicitly.
+- ORG is the weakest model-detected label and is still sometimes confused with
+  PERSON, since an organisation name is often an ordinary word.
+- Telephone numbers, IBANs and national numbers are handled by `phonenumbers` and
+  `python-stdnum` rather than by patterns written here. Email, URL and postal codes
+  are still patterns, and are pragmatic rather than full format specifications.
+- Check digits are reported but never used to reject a detection, so an invalid
+  account number is still redacted. This is deliberate: a miss is a leak, while an
+  unnecessary redaction costs little.
+- English only. No other language and no non-Latin script has been evaluated.
