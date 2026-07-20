@@ -438,6 +438,162 @@ select {
   line-height: 1.65;
 }
 
+/* --- presentation sections ---------------------------------------------- */
+
+/* Sub-headings inside a card, for the sections that carry the findings. */
+.section__title {
+  margin: 28px 0 6px;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+}
+
+.section__title:first-of-type {
+  margin-top: 0;
+}
+
+.section__lede {
+  margin: 0 0 14px;
+  max-width: 76ch;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+/* A point worth stopping on, set apart from the surrounding prose. */
+.callout {
+  margin: 16px 0 0;
+  padding: 14px 16px;
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+/* --- tables -------------------------------------------------------------- */
+
+/* Wide tables scroll inside their own box rather than the page. The scrolling
+   lives on a wrapper, so the table keeps normal table layout. */
+.table__scroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.table thead th {
+  padding: 8px 14px 8px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.table td {
+  padding: 11px 14px 11px 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table__name {
+  display: block;
+}
+
+/* The one-line reason under a configuration name. */
+.table__note {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.table__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.table__num--strong {
+  color: var(--text);
+  font-weight: 650;
+}
+
+/* The configuration actually shipped. */
+.table__row--lead .table__name,
+.table__row--lead .table__num--strong {
+  color: var(--found);
+}
+
+/* Reasons are prose, so they may wrap where the rest of the table does not. */
+.table__why {
+  max-width: 46ch;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: normal;
+}
+
+/* --- method badges ------------------------------------------------------- */
+
+.badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.badge--model,
+.badge--zero-shot {
+  color: var(--accent-strong);
+  border-color: rgba(74, 158, 255, 0.45);
+  background: var(--accent-soft);
+}
+
+.badge--rule,
+.badge--library {
+  color: var(--found);
+  border-color: rgba(63, 178, 127, 0.45);
+  background: var(--found-soft);
+}
+
+/* --- limitations --------------------------------------------------------- */
+
+.limits {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.limits li {
+  margin-bottom: 8px;
+}
+
+.limits li:last-child {
+  margin-bottom: 0;
+}
+
+.limits b {
+  color: var(--text);
+  font-weight: 600;
+}
+
 .foot {
   border-top: 1px solid var(--line);
   padding-top: 18px;

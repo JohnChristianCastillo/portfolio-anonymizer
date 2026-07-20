@@ -1,4 +1,6 @@
+import { Benchmark } from "./components/Benchmark";
 import { Demo } from "./components/Demo";
+import { Methods } from "./components/Methods";
 import { SiteNav } from "./components/SiteNav";
 import { setGatewaySession } from "./lib/api";
 import { Gate } from "./lib/Gate";
@@ -72,8 +74,8 @@ export default function App() {
             <h3>2. Resolve</h3>
             <p>
               Detectors can claim overlapping text, so their results are ranked and
-              merged: rules win over model guesses, then the longer match wins. What
-              comes out is a set of non-overlapping spans.
+              merged: a validated identifier outranks a model's guess, then the
+              longer match wins. What comes out is a set of non-overlapping spans.
             </p>
           </div>
           <div className="flow__step">
@@ -85,6 +87,44 @@ export default function App() {
             </p>
           </div>
         </div>
+      </section>
+
+      <Benchmark />
+
+      <Methods />
+
+      <section className="card">
+        <header className="card__head">
+          <h2>What this does not do</h2>
+          <p className="muted">
+            Worth stating plainly rather than leaving to be discovered.
+          </p>
+        </header>
+        <ul className="limits">
+          <li>
+            <b>Both evaluation sets are small</b>, at 10 texts and 22. A label that
+            appears once and scores 1.00 means one correct detection, not a solved
+            problem.
+          </li>
+          <li>
+            <b>English only.</b> The models are English-trained, so no other language
+            and no non-Latin script has been evaluated.
+          </li>
+          <li>
+            <b>Organisations are the weakest label</b> the models handle, and are
+            still sometimes confused with people, since an organisation name is often
+            an ordinary word.
+          </li>
+          <li>
+            <b>The best configuration is not the default.</b> The zero-shot model
+            pins an older version of a shared dependency, so it is kept out of the
+            lock file and enabled explicitly.
+          </li>
+          <li>
+            <b>Detection is not a guarantee.</b> Anything a detector misses stays in
+            the output, which is why recall is the metric this is judged on.
+          </li>
+        </ul>
       </section>
 
       <footer className="foot">
