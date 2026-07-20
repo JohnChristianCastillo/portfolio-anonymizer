@@ -519,9 +519,14 @@ select {
   font-size: 12px;
 }
 
-.table__num {
+/* Two class names, so this beats `.table thead th`'s left alignment and applies to
+   the header and its column together. Without the extra weight the headings stay
+   left while the figures under them sit right. */
+.table .table__num {
+  width: 7.5rem;
   text-align: right;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .table__num--strong {
