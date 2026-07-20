@@ -15,6 +15,9 @@ in the lock file:
     uv run --with gliner anonymizer-benchmark
 """
 
+import argparse
+from pathlib import Path
+
 from . import configs, pipeline, scoring
 from .dataset import load_rows
 from .spans import anonymize_spans
@@ -43,8 +46,26 @@ def evaluate(detectors, rows) -> list[tuple[str, str]]:
     return pairs
 
 
+def parse_args(argv: list[str] | None = None):
+    """Command line options. `--dataset` keeps each evaluation isolated."""
+    parser = argparse.ArgumentParser(description="Benchmark the detector configurations.")
+    parser.add_argument(
+        "--dataset",
+        type=Path,
+        default=None,
+        help=(
+            "Labelled CSV to evaluate against. Defaults to the provided dataset. "
+            "Use evaluation/own_benchmark.csv for the self-authored set."
+        ),
+    )
+    return parser.parse_args(argv)
+
+
 def main() -> None:
-    rows = load_rows()
+    args = parse_args()
+    rows = load_rows(args.dataset) if args.dataset else load_rows()
+    if args.dataset:
+        print(f"Dataset: {args.dataset}  ({len(rows)} texts)\n")
 
     core = {}
     for configuration in configs.CORE_CONFIGURATIONS:

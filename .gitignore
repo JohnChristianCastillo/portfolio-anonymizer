@@ -28,6 +28,10 @@ data/
 *.csv
 *.tsv
 
+# Exception: evaluation/ holds our own synthetic set, written here rather than
+# provided, so it ships with the project and the extra evaluation is reproducible.
+!evaluation/*.csv
+
 # Saved run outputs (may contain the provided text; kept local)
 output/
 

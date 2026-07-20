@@ -71,7 +71,23 @@ EXTENDED_CONFIGURATIONS = [
         core=False,
         requires="gliner",
     ),
+    # Stacking all three, to test whether more detectors is better. It is not: the
+    # extra model wins overlaps it should not, and organisations get worse. Kept
+    # because the negative result is the point, and because it is the evidence that
+    # GLiNER+regex is the right delivered combination rather than a lucky guess.
+    Configuration(
+        "stacked",
+        "Stacked x3",
+        [regex_rules, hf_ontonotes, gliner_model],
+        core=False,
+        requires="gliner",
+    ),
 ]
+
+# The smallest combination that produces every one of the twelve labels. The brief
+# asks that the app handle at least those entities; it does not ask that a single
+# model do so. Measured as the best performer as well as the smallest.
+FULL_COVERAGE_KEY = "gliner+regex"
 
 CONFIGURATIONS = CORE_CONFIGURATIONS + EXTENDED_CONFIGURATIONS
 
