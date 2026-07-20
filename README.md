@@ -62,24 +62,59 @@ offsets of spans still to be replaced.
 Public, pre-trained models only; nothing is trained here and no weights are
 committed. Each is declared as a dependency and fetched on first use.
 
+The exercise asked for two pre-trained NER models to be compared. Those two, and the
+rule layer, are the **required comparison**:
+
 | Detector | What it is | Labels it contributes |
 |---|---|---|
-| `spacy_detector` | spaCy `en_core_web_sm` | PERSON, ORG, LOCATION, DATE_TIME, AMOUNT |
-| `hf_detector` | HuggingFace `dslim/bert-base-NER` (BERT transformer) | PERSON, ORG, LOCATION |
-| `regex_detector` | Rule patterns | EMAIL_ADDRESS, URL, PHONE_NUMBER, IBAN, SSN |
+| `spacy_model` | spaCy `en_core_web_sm` | PERSON, ORG, LOCATION, DATE_TIME, AMOUNT |
+| `hf_model` | HuggingFace `dslim/bert-base-NER` (BERT, CoNLL) | PERSON, ORG, LOCATION |
+| `regex_rules` | Rule patterns | EMAIL_ADDRESS, URL, PHONE_NUMBER, IBAN, SSN |
 
 Rules handle entities with a fixed shape; models handle open-class entities whose
 identity depends on context. The two cover disjoint labels, which is why the
 strongest configuration combines them.
 
+Two further models were measured afterwards, kept separate so they cannot be
+confused with the required comparison or change its result:
+
+| Detector | What it is | Why it was added |
+|---|---|---|
+| `hf_ontonotes` | A transformer trained on OntoNotes | Tests whether the CoNLL model lost on architecture or merely on label coverage |
+| `gliner_model` | Zero-shot NER, given label names at inference time | The only way to reach JOB and UNIVERSITY, which no standard scheme contains |
+
+`gliner` is **not in the lock file**: it pins an older `transformers` than the rest of
+the project, so installing it would change the environment the required comparison
+was measured in. Run those configurations in a throwaway overlay instead:
+
+```bash
+uv run --with gliner anonymizer-benchmark
+uv run --with gliner anonymizer-report
+```
+
+Without it, those configurations are simply reported as skipped.
+
 ## Results
 
 Full write-up with charts: **[report/REPORT.md](report/REPORT.md)**
 
-![Overall metrics by configuration](report/overall_metrics.png)
+The required two-model comparison:
 
-Adding the rule layer to either model raises recall with no loss of precision.
-JOB and UNIVERSITY are not reached by any configuration; see the report for why.
+![Overall metrics by configuration](report/core_overall_metrics.png)
+
+Every configuration measured, including the two added afterwards:
+
+![F1 per entity label, all configurations](report/all_per_label_f1.png)
+
+Headlines, with the reasoning in the report:
+
+- Adding the rule layer to either model raises recall with no loss of precision,
+  because rules and models cover disjoint labels.
+- In the required comparison the smaller spaCy model wins, but **not because it is
+  the better model**: the transformer it was measured against is blind to a third of
+  the labels. Rerun on a matching label scheme, the transformer is stronger.
+- JOB and UNIVERSITY are unreachable for every conventional model, since no standard
+  scheme contains those classes. Only the zero-shot configuration detects them.
 
 ## Setup
 

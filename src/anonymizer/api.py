@@ -78,7 +78,9 @@ def _text_limit_for(session_tier: str | None) -> int | None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    for configuration in configs.CONFIGURATIONS:
+    # Only configurations whose optional dependencies are installed, so a missing
+    # package leaves that configuration unavailable rather than failing startup.
+    for configuration in configs.runnable(configs.CONFIGURATIONS):
         for detector in configuration.detectors:
             if detector not in _models:
                 _models[detector] = detector.load()
@@ -160,8 +162,12 @@ def list_configs() -> list[dict]:
             "label": configuration.label,
             "detectors": [d.MODEL_NAME for d in configuration.detectors],
             "default": configuration.key == configs.DEFAULT_KEY,
+            # False for configurations added after the required two-model comparison,
+            # so a caller can present them separately.
+            "core": configuration.core,
         }
-        for configuration in configs.CONFIGURATIONS
+        # Only what this deployment can actually run.
+        for configuration in configs.runnable(configs.CONFIGURATIONS)
     ]
 
 
@@ -188,8 +194,16 @@ def anonymize(
         )
 
     configuration = configs.by_key(request.config)
+    if configuration is not None and not configuration.available():
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Config '{request.config}' needs the optional "
+                f"'{configuration.requires}' package, which is not installed here."
+            ),
+        )
     if configuration is None:
-        known = ", ".join(c.key for c in configs.CONFIGURATIONS)
+        known = ", ".join(c.key for c in configs.runnable(configs.CONFIGURATIONS))
         raise HTTPException(
             status_code=422,
             detail=f"Unknown config '{request.config}'. Available: {known}",

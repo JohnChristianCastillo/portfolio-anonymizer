@@ -236,10 +236,21 @@ def per_label_f1(reports: dict[str, scoring.Report], out: Path) -> None:
     plt.close(fig)
 
 
-def build_charts(reports: dict[str, scoring.Report], out_dir: Path) -> list[str]:
-    """Write every chart and return the filenames."""
+def build_charts(
+    reports: dict[str, scoring.Report], out_dir: Path, prefix: str = ""
+) -> list[str]:
+    """Write every chart and return the filenames.
+
+    `prefix` lets one report hold more than one set, so the required comparison and
+    the wider exploration can be charted separately rather than averaged together.
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
-    overall_metrics(reports, out_dir / "overall_metrics.png")
-    metric_comparison(reports, out_dir / "metric_comparison.png")
-    per_label_f1(reports, out_dir / "per_label_f1.png")
-    return ["overall_metrics.png", "metric_comparison.png", "per_label_f1.png"]
+    names = [
+        f"{prefix}overall_metrics.png",
+        f"{prefix}metric_comparison.png",
+        f"{prefix}per_label_f1.png",
+    ]
+    overall_metrics(reports, out_dir / names[0])
+    metric_comparison(reports, out_dir / names[1])
+    per_label_f1(reports, out_dir / names[2])
+    return names
