@@ -1,8 +1,8 @@
 text;label
 Sofie Vermeulen works as a data engineer at Contoso Belgium in Ghent.;<PERSON> works as a <JOB> at <ORG> in <LOCATION>.
 You can reach Maarten De Vos at maarten.devos@contoso.example or on +32 471 22 33 44.;You can reach <PERSON> at <EMAIL_ADDRESS> or on <PHONE_NUMBER>.
-Transfer EUR 2450.00 to BE68 5390 0754 7034 before 15 March 2026.;Transfer <AMOUNT> to <IBAN> before <DATE_TIME>.
-Her national number is 85.07.12-034.51 and the file was opened on 4 April 2025.;Her national number is <SSN> and the file was opened on <DATE_TIME>.
+Transfer EUR 2450.00 to BE85 6510 0000 0006 before 15 March 2026.;Transfer <AMOUNT> to <IBAN> before <DATE_TIME>.
+Her national number is 85.07.12-034.82 and the file was opened on 4 April 2025.;Her national number is <SSN> and the file was opened on <DATE_TIME>.
 Elena Rossi graduated from Northgate University and now teaches at Westmoor College.;<PERSON> graduated from <UNIVERSITY> and now teaches at <UNIVERSITY>.
 Full details are published at https://www.contoso.example/privacy-policy.;Full details are published at <URL>.
 Thomas Mercier and Anke Peeters joined Northwind Systems in September 2024.;<PERSON> and <PERSON> joined <ORG> in <DATE_TIME>.
