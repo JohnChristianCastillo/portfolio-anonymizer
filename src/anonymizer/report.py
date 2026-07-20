@@ -119,6 +119,103 @@ def configuration_table(configurations) -> str:
     )
 
 
+# How each of the twelve labels is actually detected in the delivered tool, and the
+# reason that method was chosen over the alternatives. Ordered as scoring.LABELS.
+ENTITY_METHODS = [
+    (
+        "PERSON",
+        "NER model",
+        "A name is a name because of where it sits in a sentence, not its shape. "
+        "No pattern can express that. Every model detects it well (F1 0.90 to 1.00).",
+    ),
+    (
+        "ORG",
+        "NER model",
+        "Same reason as PERSON, but harder: an organisation name is often an "
+        "ordinary word. This is the weakest of the model-detected labels (0.77) and "
+        "the main remaining source of confusion with PERSON.",
+    ),
+    (
+        "JOB",
+        "Zero-shot model",
+        "Absent from every standard NER scheme, so a fine-tuned model scores 0.00 "
+        "no matter how good it is. A zero-shot model is given the label name at "
+        "inference time instead, which takes it from 0.00 to 0.91.",
+    ),
+    (
+        "EMAIL_ADDRESS",
+        "Rule",
+        "Fully specified by its form. A pattern reaches 1.00, while the zero-shot "
+        "model reaches 0.67 on the same data, so a rule is both better and cheaper.",
+    ),
+    (
+        "LOCATION",
+        "NER model, plus a rule for postal codes",
+        "Place names need a model. Postal codes are the exception: the models "
+        "consistently return the town but not the digits in front of it, so a narrow "
+        "rule fills that gap. It requires a following capitalised word, so a bare "
+        "year is not mistaken for a postal code.",
+    ),
+    (
+        "AMOUNT",
+        "NER model, chosen for its label scheme",
+        "Solved by choosing the right model rather than by writing a rule. CoNLL "
+        "has no money class and scores 0.00; the OntoNotes model scores 1.00 on the "
+        "same texts, including the European formats that defeat the smaller "
+        "pipeline. Currency writing varies far too much to enumerate by hand.",
+    ),
+    (
+        "DATE_TIME",
+        "NER model",
+        "The models read machine timestamps as well as written dates, so no rule is "
+        "needed. An earlier hand-written telephone pattern matched the leading "
+        "'2022-12-27 08' of a timestamp and split it in half; validating telephone "
+        "numbers properly removed the collision and the label rose to 0.93.",
+    ),
+    (
+        "UNIVERSITY",
+        "Zero-shot model",
+        "Like JOB, absent from standard schemes, so 0.00 everywhere until asked for "
+        "by name. Then 0.86.",
+    ),
+    (
+        "PHONE_NUMBER",
+        "phonenumbers (libphonenumber)",
+        "The one identifier that is parsed and validated rather than matched. A "
+        "pattern loose enough to accept the many ways a number is written also "
+        "matches timestamps and national numbers; validation removes that whole "
+        "class of collision, and covers every country rather than a chosen few.",
+    ),
+    (
+        "URL",
+        "Rule",
+        "Fully specified by its form, and the zero-shot model scores 0.00 on it. "
+        "The pattern requires a scheme or www. so ordinary words never match, and "
+        "excludes sentence punctuation from the end of a path.",
+    ),
+    (
+        "IBAN",
+        "Rule, with python-stdnum for check digits",
+        "Models score 0.00: an account number carries no linguistic signal. The "
+        "shape is matched first, before telephone numbers, because an IBAN contains "
+        "a run of digits that is a plausible number on its own.",
+    ),
+    (
+        "SSN",
+        "Rule, with python-stdnum for check digits",
+        "Same as IBAN. National identifier formats differ per country, so the "
+        "library supplies the structures rather than one developer's guesses.",
+    ),
+]
+
+
+def entity_method_table() -> str:
+    return markdown_table(
+        ["Entity", "How it is detected", "Why"],
+        [[label, method, why] for label, method, why in ENTITY_METHODS],
+    )
+
+
 def build(
     core: dict[str, scoring.Report],
     extended: dict[str, scoring.Report],
@@ -256,9 +353,9 @@ pipeline therefore wins overall, on coverage rather than on quality.
 A rule layer for fixed-shape identifiers was added as an engineering step. It is
 **not** part of the model comparison above, and mixing the two would be misleading:
 
-- The rules can only ever produce **5 of the 12 labels** (email, URL, phone, IBAN,
-  national number). They contribute nothing to people, organisations, locations,
-  dates or amounts.
+- The rules can only ever produce **6 of the 12 labels** (email, URL, telephone,
+  IBAN, national number, and postal codes within a location). They contribute
+  nothing to people, organisations, job titles, dates or amounts.
 - Adding the same rule layer to both models adds the same easy wins to both, which
   raises both scores and narrows the visible gap between them.
 - In principle the rules could also mask a model's detections, since they take
@@ -291,6 +388,35 @@ delivered tool combines them even though the comparison above does not.
 
 {per_label_table(core)}
 {extended_section}
+## How each entity is detected, and why
+
+Everything above compares configurations. This is the conclusion drawn from them:
+for each of the twelve labels, the method the delivered tool uses and the reason it
+was chosen.
+
+The division is not arbitrary. It follows from whether a label is identifiable by
+its **form** or by its **meaning**. An IBAN is an IBAN whatever sentence surrounds
+it, so a rule reads it perfectly and a model reads it not at all. A person's name is
+only a name because of the words around it, so the reverse holds. Two labels, JOB
+and UNIVERSITY, belong to neither group: they are meaning-based but missing from
+every standard NER scheme, which is what a zero-shot model exists to solve.
+
+{entity_method_table()}
+
+Where a standard exists, the standard's own library does the work rather than a
+pattern invented here: `phonenumbers` for telephone numbers, `python-stdnum` for
+account and national numbers. This is a correctness decision, not a convenience
+one. Those libraries encode per-country structure and check digits that no
+hand-written pattern reproduces, and they were what fixed the timestamp collision.
+
+Check digits are **reported alongside a detection and never used to reject one**.
+The reasoning is the same as everywhere else in this task: a mistyped account number
+is still an account number, so redacting it costs nothing while missing it is a leak.
+The best illustration is `BE68 5390 0754 7034`, the example IBAN that appears in most
+documentation. It passes the international mod-97 check but fails Belgium's own
+account-number rule, so validating before redacting would have discarded a textbook
+account number.
+
 ## How the scoring works
 
 The anonymized RESULT is compared against the EXPECTED answer by aligning the two
