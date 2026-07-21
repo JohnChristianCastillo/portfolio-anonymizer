@@ -157,6 +157,48 @@ class AnonymizeResponse(BaseModel):
     )
 
 
+# A short text used by the clickable GET demo when no ?text= is supplied.
+DEMO_MAX_CHARS = 280
+DEMO_TEXT = (
+    "Maria Lopez, a data engineer at Contoso, can be reached at "
+    "maria@contoso.com or on +32 470 12 34 56."
+)
+
+
+def _anonymize(text, configuration, include_original: bool = False) -> AnonymizeResponse:
+    """Run one configuration over `text` and build the response.
+
+    Shared by the POST endpoint and the GET demo, so the two cannot drift. The
+    concurrency bound stops a burst from saturating the host.
+    """
+    detectors_with_models = [(d, _models[d]) for d in configuration.detectors]
+    if not _inference_slots.acquire(timeout=_ACQUIRE_TIMEOUT_SECONDS):
+        raise HTTPException(
+            status_code=503,
+            detail="The service is busy running other requests. Try again shortly.",
+        )
+    try:
+        spans = pipeline.detect_all(detectors_with_models, text)
+    finally:
+        _inference_slots.release()
+
+    entities = [
+        Entity(start=start, end=end, label=label, text=text[start:end])
+        for start, end, label in sorted(spans)
+    ]
+    counts: dict[str, int] = {}
+    for entity in entities:
+        counts[entity.label] = counts.get(entity.label, 0) + 1
+
+    return AnonymizeResponse(
+        config=configuration.key,
+        anonymized=anonymize_spans(text, spans),
+        entities=entities,
+        entity_counts=counts,
+        original=text if include_original else None,
+    )
+
+
 # Data endpoints. The /api prefix is what the gateway gates on.
 api = APIRouter(prefix="/api")
 
@@ -175,6 +217,18 @@ def health() -> dict:
             "required_tiers": sorted(_REQUIRED_TIERS) or "open",
         },
     }
+
+
+@app.get("/demo", response_model=AnonymizeResponse, summary="One-click anonymize (GET)")
+def demo(text: str = DEMO_TEXT) -> AnonymizeResponse:
+    """A clickable demo: open this URL, optionally with ?text=..., to get the JSON back.
+
+    Deliberately sits outside /api, so it is reachable without the admission gate and
+    can be a link you click. Kept from being an open inference endpoint by a hard
+    length cap and the shared concurrency bound; it always uses the default config.
+    """
+    configuration = configs.by_key(configs.DEFAULT_KEY)
+    return _anonymize(text[:DEMO_MAX_CHARS], configuration)
 
 
 @api.get("/configs", summary="List the available detector configurations")
@@ -232,35 +286,7 @@ def anonymize(
             detail=f"Unknown config '{request.config}'. Available: {known}",
         )
 
-    detectors_with_models = [(d, _models[d]) for d in configuration.detectors]
-
-    # Bound how many inferences run at once, so a burst cannot saturate the host.
-    if not _inference_slots.acquire(timeout=_ACQUIRE_TIMEOUT_SECONDS):
-        raise HTTPException(
-            status_code=503,
-            detail="The service is busy running other requests. Try again shortly.",
-        )
-    try:
-        spans = pipeline.detect_all(detectors_with_models, request.text)
-    finally:
-        _inference_slots.release()
-
-    entities = [
-        Entity(start=start, end=end, label=label, text=request.text[start:end])
-        for start, end, label in sorted(spans)
-    ]
-
-    counts: dict[str, int] = {}
-    for entity in entities:
-        counts[entity.label] = counts.get(entity.label, 0) + 1
-
-    return AnonymizeResponse(
-        config=configuration.key,
-        anonymized=anonymize_spans(request.text, spans),
-        entities=entities,
-        entity_counts=counts,
-        original=request.text if request.include_original else None,
-    )
+    return _anonymize(request.text, configuration, request.include_original)
 
 
 app.include_router(api)
