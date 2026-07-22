@@ -9,12 +9,14 @@ requires an admitted session, so model inference sits behind the queue while the
 page itself stays open to anyone.
 """
 
+import json
 import os
 import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import APIRouter, FastAPI, Header, HTTPException
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -219,16 +221,23 @@ def health() -> dict:
     }
 
 
-@app.get("/demo", response_model=AnonymizeResponse, summary="One-click anonymize (GET)")
-def demo(text: str = DEMO_TEXT) -> AnonymizeResponse:
+@app.get("/demo", summary="One-click anonymize (GET)")
+def demo(text: str = DEMO_TEXT) -> Response:
     """A clickable demo: open this URL, optionally with ?text=..., to get the JSON back.
 
     Deliberately sits outside /api, so it is reachable without the admission gate and
     can be a link you click. Kept from being an open inference endpoint by a hard
     length cap and the shared concurrency bound; it always uses the default config.
+
+    The response includes the original text and is serialized by hand with json.dumps
+    so it is pretty-printed and the `<LABEL>` angle brackets stay as real characters
+    (the model-based response path escapes them to \\u003c/\\u003e), which reads better
+    for a human clicking the link.
     """
     configuration = configs.by_key(configs.DEFAULT_KEY)
-    return _anonymize(text[:DEMO_MAX_CHARS], configuration)
+    result = _anonymize(text[:DEMO_MAX_CHARS], configuration, include_original=True)
+    body = json.dumps(result.model_dump(), ensure_ascii=False, indent=2)
+    return Response(content=body, media_type="application/json")
 
 
 @api.get("/configs", summary="List the available detector configurations")
